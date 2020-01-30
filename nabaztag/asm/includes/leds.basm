@@ -1,0 +1,59 @@
+define %LED_BOTTOM      0
+define %LED_NOSE        4
+define %LED_LEFT        3
+define %LED_MIDDLE      2
+define %LED_RIGHT       1
+
+# The registers R0, R1 and R2 are used by the LED control
+# code to represent an RGB value.
+define $R R0
+define $G R1
+define $B R2
+
+@leds_off
+    PUSH 0b000000000, 0b00111111
+    CLR R3
+    CLR R4
+    PALETTE R3, R4
+    LD R3, %LED_BOTTOM
+    LED R3, R4
+    LD R3, %LED_LEFT
+    LED R3, R4
+    LD R3, %LED_MIDDLE
+    LED R3, R4
+    LD R3, %LED_RIGHT
+    LED R3, R4
+    LD R3, %LED_NOSE
+    LED R3, R4
+    PULL 0b000000000, 0b00111111
+    WAIT 1
+    RTS
+
+# Move all LEDs to a random color over a short period of time.
+@twinkle
+    PUSH 0b00000000, 0b00011111
+    define $led R3
+    define $led_max R4
+    define $transition R5
+
+    LD $led 0
+    LD $led_max 4
+    LD $transition 20
+
+    @update_led
+    # Make random color.
+    RND $R
+    RND $G
+    RND $B
+    WAIT 1
+
+    # Update LED
+    LED $led, $transition
+    WAIT 1
+
+    INC $led
+    CMP $led $led_max
+    BLE @update_led
+
+    WAIT $transition
+    PULL 0b00000000, 0b00011111

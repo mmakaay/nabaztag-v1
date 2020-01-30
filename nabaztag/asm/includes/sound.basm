@@ -1,0 +1,6 @@
+@sound_off
+    MIDISTOP
+    WAVSTOP
+    WAIT 1
+    RTS
+

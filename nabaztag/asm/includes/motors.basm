@@ -1,0 +1,59 @@
+define %MOTOR_LEFT      0
+define %MOTOR_RIGHT     1
+define %MOTOR_STOP      0
+define %MOTOR_FORWARD   1
+define %MOTOR_REVERSE   2
+
+@motor_left_forward
+    PUSH 0b000000000, 0b00000011
+    LD R0, %MOTOR_LEFT
+    LD R1, %MOTOR_FORWARD
+    MOTOR R0, R1
+    PULL 0b000000000, 0b00000011
+    WAIT 1
+    RTS
+
+@motor_left_reverse
+    PUSH 0b000000000, 0b00000011
+    LD R0, %MOTOR_LEFT
+    LD R1, %MOTOR_REVERSE
+    MOTOR R0, R1
+    PULL 0b000000000, 0b00000011
+    WAIT 1
+    RTS
+
+@motor_left_stop
+    PUSH 0b000000000, 0b00000011
+    LD R0, %MOTOR_LEFT
+    LD R1, %MOTOR_STOP
+    MOTOR R0, R1
+    PULL 0b000000000, 0b00000011
+    WAIT 1
+    RTS
+
+@motor_right_forward
+    PUSH 0b000000000, 0b00000011
+    LD R0, %MOTOR_RIGHT
+    LD R1, %MOTOR_FORWARD
+    MOTOR R0, R1
+    PULL 0b000000000, 0b00000011
+    WAIT 1
+    RTS
+
+@motor_right_reverse
+    PUSH 0b000000000, 0b00000011
+    LD R0, %MOTOR_RIGHT
+    LD R1, %MOTOR_REVERSE
+    MOTOR R0, R1
+    PULL 0b000000000, 0b00000011
+    WAIT 1
+    RTS
+
+@motor_right_stop
+    PUSH 0b000000000, 0b00000011
+    LD R0, %MOTOR_RIGHT
+    LD R1, %MOTOR_STOP
+    MOTOR R0, R1
+    PULL 0b000000000, 0b00000011
+    WAIT 1
+    RTS

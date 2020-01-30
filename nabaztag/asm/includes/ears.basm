@@ -1,0 +1,109 @@
+include motors
+include ram
+
+# In the ear syncing code, I let the ears rotate, while keeping
+# a tab on the motor encoder values in a loop. Within that loop,
+# I check if the encoder values have changed. If not, a counter
+# for the respective motor is incremented.
+# When the value for a motor encoder has changed, its counter
+# acts a measure for the amount of time that has passed between
+# two value changes.
+#
+# Since the encoder makes use of a gap for encoding its starting
+# position, we can make use of the counter to find this starting
+# position. The counter will be higher than between two regular
+# encoder value changes.
+#
+# Based on experimentation, I found that threshold values from 7 to
+# 25 yielded good results for syncing up the ear motors with the
+# encoder gap. Below 7, the gap was detected too soon. Above 25,
+# the gap was not detected. Thresholds close to these boundaries
+# produced unpredictable results.
+#
+# This is good! There is a wide range of thresholds that do work,
+# so we can use a value smack in the middle and rest assured that
+# this will likely work on other people's bunnies too.
+
+@sync_ears
+    define $left         R0
+    define $l_new        R1
+    define $l_old        R2
+    define $l_gap_size   R3
+    define $right        R4
+    define $r_new        R5
+    define $r_old        R6
+    define $r_gap_size   R7
+    define $threshold    R8
+    define $sync_state   R9
+
+    PUSH 0xff, 0xff               # Allows me to fiddle with all registers
+
+    LD $threshold, 16             # Gap detection threshold, see above
+    LD $sync_state 0x11           # To keep track if both ears are synced
+    LD $left %MOTOR_LEFT          # Left motor number
+    LD $right %MOTOR_RIGHT        # Right motor number
+
+    BSR @motor_left_reverse       # First, start both motors to make the ears
+    BSR @motor_right_reverse      # turn in reverse direction. When they were
+    WAIT 25                       # up and synced, this will speed up syncing
+
+    BSR @motor_left_forward       # Now start both motors to make the ears
+    BSR @motor_right_forward      # turn in the forward direction
+
+    MOTORGET $l_new, $left        # Get the encoder value for the left motor
+    LD $l_old, $l_new             # Copy the value to the old value register
+    CLR $l_gap_size               # Clear the gap size counter
+
+    MOTORGET $r_new, $right       # Do the same for the right ear
+    LD $r_old, $r_new
+    CLR $r_gap_size
+
+@sync_loop
+    WAIT 1                        # required to update the motor encoders
+
+@sync_left
+    MOTORGET $l_new, $left        # Get new left motor encoder value
+    CMP $l_old, $l_new            # Compare to the known value
+    BNE @check_for_gap_left       # If it changed, check if we're at the gap
+    INC $l_gap_size               # If not, then increment the gap size counter
+
+@sync_right
+    MOTORGET $r_new, $right       # Do the same for the right motor
+    CMP $r_old, $r_new
+    BNE @check_for_gap_right
+    INC $r_gap_size
+
+@restart_if_not_yet_synced
+    TST $sync_state               # If there are still sync bits active
+    BNE @sync_loop                # then restart the sync loop
+
+@done
+    STR $l_old, *LEFT_EAR_START   # Otherwise, store the motor start positions
+    STR $r_old, *RIGHT_EAR_START  # of the two ears in RAM memory
+    PULL 0xff, 0xff               # Restore all registers
+    RTS                           # Return to the caller
+
+@check_for_gap_left
+    LD $l_old, $l_new             # Keep track of the new encoder value
+    CMP $l_gap_size, $threshold   # If the gap size exceeds the threshold
+    BGT @gap_l_found              # then we found the gap, the ear is in sync!
+    CLR $l_gap_size               # Otherwise this was a normal tick, clear it
+    BRA @sync_right               # and continue with the sync process
+
+@gap_l_found
+    BSR @motor_left_stop          # Stop the motor now the ear is in sync
+    AND $sync_state, 0x01         # Flag this one as synced
+    BRA @sync_right               # and continue with the sync process
+
+@check_for_gap_right
+    LD $r_old, $r_new             # Do the same for the right ear
+    CMP $r_gap_size, $threshold
+    BGT @gap_right_found
+    CLR $r_gap_size
+    BRA @sync_loop
+
+@gap_right_found
+    BSR @motor_right_stop
+    AND $sync_state, 0x10
+    BRA @restart_if_not_yet_synced
+

@@ -1,0 +1,16 @@
+include motors
+include leds
+include sound
+include ears
+
+@reset
+    BSR @sound_off
+    BSR @motor_right_stop
+    BSR @motor_left_stop
+    BSR @leds_off
+    BSR @sync_ears
+    RTS
+
+@end
+    WAIT 10
+    BRA @end

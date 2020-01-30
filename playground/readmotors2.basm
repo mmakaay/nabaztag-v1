@@ -1,0 +1,9 @@
+include base
+include ears
+
+@main
+    BSR @reset
+
+@idle
+    BSR @twinkle
+    BRA @idle
