@@ -24,7 +24,7 @@ include ram
 # so we can use a value smack in the middle and rest assured that
 # this will likely work on other people's bunnies too.
 
-@sync_ears
+@SyncEars()
     define $left         R0
     define $l_new        R1
     define $l_old        R2
@@ -43,12 +43,12 @@ include ram
     LD $left %MOTOR_LEFT          # Left motor number
     LD $right %MOTOR_RIGHT        # Right motor number
 
-    BSR @motor_left_reverse       # First, start both motors to make the ears
-    BSR @motor_right_reverse      # turn in reverse direction. When they were
+    BSR @ReverseLeftMotor()       # First, start both motors to make the ears
+    BSR @ReverseRightMotor()      # turn in reverse direction. When they were
     WAIT 25                       # up and synced, this will speed up syncing
 
-    BSR @motor_left_forward       # Now start both motors to make the ears
-    BSR @motor_right_forward      # turn in the forward direction
+    BSR @ForwardLeftMotor()       # Now start both motors to make the ears
+    BSR @ForwardRightMotor()      # turn in the forward direction
 
     MOTORGET $l_new, $left        # Get the encoder value for the left motor
     LD $l_old, $l_new             # Copy the value to the old value register
@@ -91,7 +91,7 @@ include ram
     BRA @sync_right               # and continue with the sync process
 
 @gap_l_found
-    BSR @motor_left_stop          # Stop the motor now the ear is in sync
+    BSR @StopLeftMotor()          # Stop the motor now the ear is in sync
     AND $sync_state, 0x01         # Flag this one as synced
     BRA @sync_right               # and continue with the sync process
 
@@ -103,7 +103,7 @@ include ram
     BRA @sync_loop
 
 @gap_right_found
-    BSR @motor_right_stop
+    BSR @StopRightMotor()
     AND $sync_state, 0x10
     BRA @restart_if_not_yet_synced
 

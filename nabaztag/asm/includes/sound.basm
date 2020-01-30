@@ -1,4 +1,4 @@
-@sound_off
+@TurnSoundOff()
     MIDISTOP
     WAVSTOP
     WAIT 1

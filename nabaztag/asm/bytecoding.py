@@ -22,8 +22,8 @@ def _create_entrypoint(ast):
        Also adds a NOP to the start of the code, since that is done
        by all 3rd party byte code that I found."""
     entrypoint = [parse_instruction('NOP', [])]
-    if list(ast.keys())[1] != '@main':
-        entrypoint.append(parse_instruction('BRA', ['@main']))
+    if list(ast.keys())[1] != '@Main':
+        entrypoint.append(parse_instruction('BRA', ['@Main']))
     ast["entrypoint"] = entrypoint
 
 def _make_symbol_table(ast):

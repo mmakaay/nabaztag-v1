@@ -394,9 +394,8 @@ def _parse_operands(specs, opcode, operands):
     raise InvalidOperandsError(opcode, operands)
 
 
-SYMBOLIC_ADDRESS = re.compile('^@\s*\S+\s*$')
+SYMBOLIC_ADDRESS = re.compile('^@(__local\d|[a-zA-Z])\S*$')
 REGISTER = re.compile('^R(?:[0-9]|1[0-5])$')
-
 
 def _try_parse_operand(expected_type, operand):
     try:

@@ -4,7 +4,7 @@ define %MOTOR_STOP      0
 define %MOTOR_FORWARD   1
 define %MOTOR_REVERSE   2
 
-@motor_left_forward
+@ForwardLeftMotor()
     PUSH 0b000000000, 0b00000011
     LD R0, %MOTOR_LEFT
     LD R1, %MOTOR_FORWARD
@@ -13,7 +13,7 @@ define %MOTOR_REVERSE   2
     WAIT 1
     RTS
 
-@motor_left_reverse
+@ReverseLeftMotor()
     PUSH 0b000000000, 0b00000011
     LD R0, %MOTOR_LEFT
     LD R1, %MOTOR_REVERSE
@@ -22,7 +22,7 @@ define %MOTOR_REVERSE   2
     WAIT 1
     RTS
 
-@motor_left_stop
+@StopLeftMotor()
     PUSH 0b000000000, 0b00000011
     LD R0, %MOTOR_LEFT
     LD R1, %MOTOR_STOP
@@ -31,7 +31,7 @@ define %MOTOR_REVERSE   2
     WAIT 1
     RTS
 
-@motor_right_forward
+@ForwardRightMotor()
     PUSH 0b000000000, 0b00000011
     LD R0, %MOTOR_RIGHT
     LD R1, %MOTOR_FORWARD
@@ -40,7 +40,7 @@ define %MOTOR_REVERSE   2
     WAIT 1
     RTS
 
-@motor_right_reverse
+@ReverseRightMotor()
     PUSH 0b000000000, 0b00000011
     LD R0, %MOTOR_RIGHT
     LD R1, %MOTOR_REVERSE
@@ -49,7 +49,7 @@ define %MOTOR_REVERSE   2
     WAIT 1
     RTS
 
-@motor_right_stop
+@StopRightMotor()
     PUSH 0b000000000, 0b00000011
     LD R0, %MOTOR_RIGHT
     LD R1, %MOTOR_STOP

@@ -1,8 +1,9 @@
 include base
 include ears
 
-@Main
-    BSR @Reset()
+@main
+    BSR @reset
+
 @idle
-    BSR @TwinkleLeds()
+    BSR @Twinkle()
     BRA @idle

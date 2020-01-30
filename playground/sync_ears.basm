@@ -13,8 +13,6 @@ define $synced          R9
 define $sync_completed  R10
 
 @main
-    BSR @reset
-
     # In the ear syncing code, I let the ears rotate, while keeping
     # a tab on the motor encoder values in a loop. Within that loop,
     # I check if the encoder values have changed. If not, a counter
@@ -44,8 +42,8 @@ define $sync_completed  R10
     LD $left %MOTOR_LEFT
     LD $right %MOTOR_RIGHT
 
-    BSR @motor_left_forward
-    BSR @motor_right_forward
+    BSR @ForwardLeftMotor()
+    BSR @ForwardRightMotor()
 
     MOTORGET $left_new, $left
     LD $left_old, $left_new

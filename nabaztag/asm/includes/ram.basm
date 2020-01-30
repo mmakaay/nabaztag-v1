@@ -6,7 +6,6 @@
 # Note that this is nothing magical, it's just my convention to
 # easily recognize these in the code.
 
-# Used to store the motor encoder values at which the ears
-# are in their starting position.
+# Motor encoder values at which the ears are in their starting position.
 define *LEFT_EAR_START   0
 define *RIGHT_EAR_START  1

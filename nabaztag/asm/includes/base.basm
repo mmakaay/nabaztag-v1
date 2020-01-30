@@ -3,14 +3,18 @@ include leds
 include sound
 include ears
 
-@reset
-    BSR @sound_off
-    BSR @motor_right_stop
-    BSR @motor_left_stop
-    BSR @leds_off
-    BSR @sync_ears
+@Reset()
+    BSR @TurnSoundOff()
+    BSR @StopLeftMotor()
+    BSR @StopRightMotor()
+    BSR @TurnAllLedsOff()
+    BSR @SyncEars()
     RTS
 
-@end
+@Sleep
+    BSR @Reset()
+    BRA @EndProgram
+
+@EndProgram
     WAIT 10
-    BRA @end
+    BRA @EndProgram
