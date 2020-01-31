@@ -1,6 +1,4 @@
-class NabaztagException(Exception):
-    pass
-
+from nabaztag.exceptions import ProgramEmptyError, ProgramTooLargeError
 
 def as_3_bytes(i):
     """Return the value of the provided integer as an array of 3 bytes."""
@@ -23,7 +21,7 @@ def as_4_bytes(i):
 
 AMBER = list(map(ord, "amber"))
 MIND = list(map(ord, "mind"))
-ZERO_AS_4BYTES = as_4_bytes(0)
+#ZERO_AS_4BYTES = as_4_bytes(0)
 CHECKSUM_PLACEHOLDER = [0x00]
 OPERATION_START = [0x7f]
 OPERATION_SRCMOD = [0x04]
@@ -46,16 +44,16 @@ class Response():
             response += o.build()
         response += OPERATION_END
 
-        if len(response) > MAX_RESPONSE_SIZE:
-            raise NabaztagException(
-                "Reponse message too large (%dB exceeds max size of %dB)" %
-                (len(response) , MAX_RESPONSE_SIZE))
+        # Temp disabled, I need to find out if this is related to the music
+        # files as well, or only the program bytecode (I suspect the latter).
+        #if len(response) > MAX_RESPONSE_SIZE:
+        #    raise ProgramTooLargeError(len(response), MAX_RESPONSE_SIZE)
 
         return response
 
 class SourcesModification():
     def __init__(self):
-        raise NabaztagException("Not yet implemented")
+        raise NotImplementedError("Sources modification")
 
 
 class BytecodeFrame():
@@ -66,7 +64,7 @@ class BytecodeFrame():
         self.id = id
         self.priority = priority
         self.program_code = program_code
-        self.audio_files = audio_files 
+        self.audio_files = audio_files
 
     def build(self):
         """Build the bytecode frame for the Nabaztag virtual machine."""
@@ -97,16 +95,20 @@ class BytecodeFrame():
 
     def _get_program_bytes(self):
         if not self.program_code:
-            raise NabaztagException("The program code must not be empty")
+            raise ProgramEmptyError()
         return as_4_bytes(len(self.program_code)) + self.program_code
 
     def _get_audio_bytes(self):
         if not self.audio_files:
             self.audio_files = []
         bytes = as_4_bytes(len(self.audio_files))
+        offset = 0
         for audio_file in self.audio_files:
-            bytes += as_3_bytes(len(audio_file)) + audio_file
-        bytes += ZERO_AS_4BYTES
+            offset += len(audio_file)
+            bytes += as_4_bytes(offset)
+        for audio_file in self.audio_files:
+            bytes += audio_file
+        #bytes += ZERO_AS_4BYTES
         return bytes
 
     def _add_checksum(self, frame):

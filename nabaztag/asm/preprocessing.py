@@ -147,7 +147,6 @@ def _mangle_local_symbols(lines):
                 mangled = True
             if mangled:
                 rewrite = '%s %s' % (opcode, ', '.join(operands))
-                print(rewrite)
                 lines[i] = (rewrite, path, line_nr)
 
     return lines

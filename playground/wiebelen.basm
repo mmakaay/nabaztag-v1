@@ -1,0 +1,25 @@
+#include base
+
+@Main
+    # Set volume
+    LD R0 255
+    VOL R0
+    LD R0 150
+    MVOL R0
+
+    # Play MIDI file
+    LD R14, 1
+    MIDIPLAY R14
+    #WAVPLAY R0
+@end
+    # Change color based on player status
+    WAIT 1
+    MUSIC R0
+    LD R1, 255
+    INC R0
+    PALETTE R0, R1
+    LD R3, 4
+    LD R4, 10
+    LED R3, R4
+
+    BRA @end

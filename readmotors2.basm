@@ -1,9 +1,0 @@
-include base
-include ears
-
-@main
-    BSR @reset
-
-@idle
-    BSR @Twinkle()
-    BRA @idle

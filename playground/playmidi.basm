@@ -1,0 +1,6 @@
+@Main
+    LD R0, 0
+    MIDIPLAY R0
+@end
+    WAIT 1
+    BRA @end

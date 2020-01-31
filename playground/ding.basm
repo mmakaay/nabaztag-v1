@@ -1,0 +1,94 @@
+# This is a re-implementation of the code/ding.bin file that is included
+# in the webdocs tree of the NabaztagLives project. I re-implemented it
+# as a test for the assembler and to see if I could play a MIDI file from
+# my toolchain.
+
+@Main
+    NOP
+    CLR R7
+    CLR R0
+    INPUT R0 @interrupt_button_down
+    LD R0, 14
+    INPUT R0, @interrupt_exception
+    LD R0, 15
+    INPUT R0, @interrupt_timer
+    BSR @leds_off
+    BSR @init_audio
+    LD R0, 0
+    BSR @play_midi_file
+    BRA @interrupt_loop
+
+@interrupt_button_down
+    BSR @leds_off
+    INC R7
+    LD R0, R7
+    LD R1, 255
+    PALETTE R0, R1
+    LD R5, 0
+    LD R4, 4
+    LED R4, R5
+    CLR R0
+    INPUTRST R0
+    RTI
+
+@interrupt_timer
+    PUSH 255, 255
+    LD R0, 15
+    INPUTRST R0
+    PULL 255, 255
+    RTIJ @interrupt_loop
+
+@interrupt_exception
+    PUSH 255, 255
+    LD R0, 14
+    INPUTRST R0
+    PULL 255, 255
+    RTIJ @Main
+
+@leds_off
+    LD R0, 0
+    LD R1, 0
+    PALETTE R0, R1
+    LD R5, 0
+    LD R4, 3
+    LED R4, R5
+    LD R4, 2
+    LED R4, R5
+    LD R4, 1
+    LED R4, R5
+    LD R4, 4
+    LED R4, R5
+    RTS
+
+@init_audio
+    MIDISTOP
+    WAVSTOP
+    LD R0, 230
+    MVOL R0
+    LD R1, 230
+    VOL R1
+    RTS
+
+@play_midi_file
+    MIDIPLAY R0
+@loop
+    WAIT 1
+    MUSIC R0
+    TST R0
+    BNE @loop
+    MIDISTOP
+    RTS
+
+@interrupt_loop
+    WAIT 1
+    CLR R0
+    INPUT R0, @interrupt_button_down
+    LD R0, 14
+    INPUT R0, @interrupt_exception
+    LD R0, 15
+    INPUT R0, @interrupt_timer
+    BRA @interrupt_loop
+
+
+
+

@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+
+from nabaztag.exceptions import NabaztagException
+from nabaztag.asm.preprocessing import preprocess
+from nabaztag.asm.parsing import parse
+from nabaztag.asm.bytecoding import ast_to_bytecode
+from nabaztag.response import Response, BytecodeFrame
+
+try:
+    lines, sources = preprocess("./wiebelen.basm")
+    ast = parse(lines, sources)
+    bytecode = ast_to_bytecode(ast)
+
+    with open("wiebelen.vox", "rb") as audio:
+        wiebelen = list(bytes(audio.read()))
+    with open("ding.mid", "rb") as audio:
+        ding = list(bytes(audio.read()))
+    with open("my.mid", "rb") as audio:
+        my = list(bytes(audio.read()))
+
+    response = Response()
+    response.add(BytecodeFrame(
+        program_code=bytecode,
+        audio_files=[
+            ding,
+            ding,
+            my,
+            ding,
+            ding,
+            ding,
+            ding,
+            my,
+        ]))
+    data = response.build() 
+
+    with open("wiebelen.bin", "wb") as f:
+        f.write(bytes(data))
+
+except NabaztagException as e:
+    print("Exception: %s: %s" % (type(e).__name__, str(e)))
+    

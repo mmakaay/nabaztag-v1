@@ -21,7 +21,10 @@ def _create_entrypoint(ast):
        which handles jumping to the @main symbol.
        Also adds a NOP to the start of the code, since that is done
        by all 3rd party byte code that I found."""
-    entrypoint = [parse_instruction('NOP', [])]
+    entrypoint = []
+    first_symbol = list(ast.keys())[1]
+    if ast[first_symbol][0][0] != 'NOP':
+        entrypoint.append(parse_instruction('NOP', []))
     if list(ast.keys())[1] != '@Main':
         entrypoint.append(parse_instruction('BRA', ['@Main']))
     ast["entrypoint"] = entrypoint
