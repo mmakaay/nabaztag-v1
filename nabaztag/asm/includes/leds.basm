@@ -16,7 +16,7 @@ define $color_B R2
     CLR  $color_R
     CLR  $color_G
     CLR  $color_B
-    CLR  $transition
+    LD   $transition 5
     LD   $led, %LED_BOTTOM
     LED  $led, $transition
     LD   $led, %LED_LEFT

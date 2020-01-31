@@ -1,22 +1,23 @@
+include leds
+
 music_file LIEF liefkleinkonijntje.mid
 
 @Main
     LD R0 255
     MVOL R0
-    LD R0 128
+    LD R0 150
     VOL R0
 
     LD R0, music_file:LIEF
     MIDIPLAY R0
-@end
-    # Change nose color based on player status
-    WAIT 1
-    MUSIC R0
-    LD R1, 255
-    INC R0
-    PALETTE R0, R1
-    LD R3, 4
-    LD R4, 10
-    LED R3, R4
 
+@wait_for_end_of_midi
+    BSR @TwinkleLeds()
+    MUSIC R0
+    TST R0
+    BNE @wait_for_end_of_midi
+    BSR @TurnAllLedsOff()
+
+@end
+    WAIT 10
     BRA @end
