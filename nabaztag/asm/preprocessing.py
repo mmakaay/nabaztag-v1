@@ -1,152 +1,212 @@
 import re
 import os.path
+from random import randint
 from collections import OrderedDict
-from nabaztag.exceptions import AsmIncludeNotFound
+from nabaztag.exceptions import AsmFileNotFound, AsmMusicFileNotFound
 
-PATH = [
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'includes')
-]
-
-def add_include_path(path):
-    path = os.path.abspath(path)
-    PATH = [path, *PATH]
-
-def preprocess(path):
-    lines, sources, _ = _load(path)
-    return lines, sources
-
-DEFINE = re.compile('^define (\S+) (.+)$')
-GLOBAL_MACRO = re.compile('^[^a-zA-Z]*[A-Z]')
-IMPORT = re.compile('^include (\S+)$')
-
-def _load(path, sources=[], macros=OrderedDict()):
-    local_macros = OrderedDict()
-    line_nr = 0
-    lines = []
-
-    # Check if the source file was already included.
-    if path in sources:
-        return lines, sources, macros
-    source_nr = len(sources)
-    sources.append(path)
-
-    src = open(path)
-    new_macros = False
-    new_local_macros = False
-    for line in src:
-        line_nr += 1
-        line = _normalize_input(line)
-
-        # Skip empty lines.
-        if line == "":
-            continue
-
-        # Handle include.
-        if IMPORT.match(line):
-            matches = IMPORT.search(line)
-            name = matches[1]
-            include_path = _find_import_file(name)
-            if include_path is None:
-                raise AsmIncludeNotFound(name, path, line_nr)
-            include_lines, sources, macros = _load(include_path, sources, macros)
-            lines.extend(include_lines)
-            continue
-
-        # Handle macro definition.
-        # Two kinds of macros are supported: global and local.
-        # Global macros are identified by the fact that the first letter
-        # in the macro is upper case (e.g. "Lalala", "%MY_CONSTANT", "123OK").
-        # All other macros are local and will only be applied within the
-        # context of the source file that is currently being processed.
-        if DEFINE.match(line):
-            matches = DEFINE.search(line)
-            find = matches[1]
-            replace = matches[2]
-            if GLOBAL_MACRO.match(find):
-                macros[find] = replace
-                new_macros = True
-            else:
-                local_macros[find] = replace
-                new_local_macros = True
-            continue
-
-        # When new macros have been defined, sort the macros
-        # by length of the macro name, so longest matches will
-        # be applied first.
-        if new_macros:
-            by_len = sorted(macros.items(), key=lambda x: -len(x[0]))
-            macros = OrderedDict(by_len)
-            new_macros = False
-        if new_local_macros:
-            by_len = sorted(local_macros.items(), key=lambda x: -len(x[0]))
-            local_macros = OrderedDict(by_len)
-            new_local_macros = False
-
-        line = _apply_macros(line, local_macros, macros)
-        lines.append((line, source_nr, line_nr))
-
-    src.close()
-    lines = _mangle_local_symbols(lines)
-    return lines, sources, macros
 
 COMMENTS = re.compile('\s*#.*$')
 TRIMMABLE_WHITESPACE = re.compile('(^\s+|\s+$)')
 WHITESPACE = re.compile('\s+')
-
-def _normalize_input(line):
-    line = COMMENTS.sub('', line)
-    line = TRIMMABLE_WHITESPACE.sub('', line)
-    line = WHITESPACE.sub(' ', line)
-    return line
-
-def _find_import_file(name):
-    for path in PATH:
-        path = os.path.join(path, name + ".basm")
-        if os.path.exists(path):
-            return path
-    return None
-
-def _apply_macros(line, local_macros, macros):
-    orig_line = ""
-    while orig_line != line:
-        orig_line = line
-        for find, replace in local_macros.items():
-            line = line.replace(find, replace)
-        for find, replace in macros.items():
-            line = line.replace(find, replace)
-    return line
-
-LOCAL_SYMBOL = re.compile('^@[a-z]\S*$')
+DEFINE = re.compile('^define (\S+) (.+)$')
+INCLUDE = re.compile('^include (\S+)$')
+GLOBAL_MACRO = re.compile('^[^a-z0-9A-Z]*[A-Z]')
+MUSICFILE = re.compile('^music_file (\S+) (.+)$')
+LOCAL_SYMBOL = re.compile('^@(?!__local_)[^a-z0-9A-Z]*[a-z0-9]\S*$')
 SPLITTER = re.compile('(?:\s*,\s*|\s+)')
-MANGLE_ID = 0
 
-def _mangle_local_symbols(lines):
-    global MANGLE_ID
-    MANGLE_ID+=1
 
-    # Pass 1: mangle all local symbols that are defined.
-    # These are the ones that appear on a line by their own.
-    local_symbols = dict()
-    for i, (line, path, line_nr) in enumerate(lines):
-        if LOCAL_SYMBOL.match(line):
-            rewrite = '@__local%d_%s' % (MANGLE_ID, line[1:])
-            local_symbols[line] = rewrite
-            lines[i] = (rewrite, path, line_nr)
+class Preprocessor():
+    def __init__(self, src_path):
+        """Instantiate a preprocessor for the provided source file."""
+        self.src_path = src_path
+        self._init_search_path()
 
-    # Pass 2: mangle all local symbols that are used as operand
-    # in an opcode and rewrite these, when we've seen a definition
-    # for them in pass 1.
-    for i, (line, path, line_nr) in enumerate(lines):
-        if '@' not in line or LOCAL_SYMBOL.match(line):
-            continue
-        opcode, *operands = SPLITTER.split(line)
-        for j, operand in enumerate(operands):
-            mangled = False
-            if operand in local_symbols:
-                operands[j] = local_symbols[operand]
-                mangled = True
-            if mangled:
-                rewrite = '%s %s' % (opcode, ', '.join(operands))
-                lines[i] = (rewrite, path, line_nr)
+    def _init_search_path(self):
+        """Setup the default search path: source file path +
+           the path to the package-provided source files."""
+        get_dir = lambda p: os.path.dirname(os.path.abspath(p))
+        self.include_path = [
+            get_dir(self.src_path),
+            os.path.join(get_dir(__file__), 'includes')
+        ]
 
-    return lines
+    def with_include_path(self, include_path):
+        """Add an extra path to the preprocessor's include paths, used for
+           finding files that are included from the source code (e.g. other
+           source files or audio files).
+           When adding a path, this one is added at the start of the
+           already established include path. Therefore files that can be
+           found in this path will take precedence."""
+        self.include_path.insert(0, include_path)
+        return self + ".basm"
+
+    def execute(self):
+        """Run the preprocessor on the provided source file."""
+        self._init_working_data()
+        self._load(self.src_path)
+        return self.lines, self.sources
+
+    def _init_working_data(self):
+        self.lines = []
+        self.sources = []
+        self.macros = Macros()
+        self.music_files = dict()
+        self.mangle_rand = "%04x" % randint(0x1000, 0xffff)
+        self.mangle_id = 0
+
+    def _load(self, path, from_frame=None):
+        full_path = self._find_file_in_include_path(path)
+        if full_path is None:
+            raise AsmFileNotFound(self.src_path, from_frame)
+        if self._already_loaded(full_path):
+            return
+        frame = StackFrame(path, len(self.sources))
+        self.sources.append(path)
+
+        with open(full_path) as src:
+            for line in src:
+                frame.line_nr += 1
+                line = self._normalize_input(line)
+                self._handle_empty_line(frame, line) or \
+                self._handle_include(frame, line) or \
+                self._handle_music_file(frame, line) or \
+                self._handle_define_macro(frame, line) or \
+                self._handle_other_line(frame, line)
+        self._mangle_local_symbols()
+
+    def _find_file_in_include_path(self, name):
+        for path in self.include_path:
+            path = os.path.join(path, name)
+            if os.path.exists(path):
+                return path
+        return None
+
+    def _already_loaded(self, path):
+        return path in self.sources
+
+    def _normalize_input(self, line):
+        line = COMMENTS.sub('', line)
+        line = TRIMMABLE_WHITESPACE.sub('', line)
+        line = WHITESPACE.sub(' ', line)
+        return line
+
+    def _handle_empty_line(self, frame, line):
+        return line == ""
+
+    def _handle_include(self, frame, line):
+        if not INCLUDE.match(line):
+            return False
+        matches = INCLUDE.search(line)
+        name = matches[1]
+        full_path = self._find_file_in_include_path(name)
+        if full_path is None:
+            raise AsmFileNotFound(name, frame)
+        self._load(full_path, frame)
+        return True
+
+    def _handle_music_file(self, frame, line):
+        if not MUSICFILE.match(line):
+            return False
+        matches = MUSICFILE.search(line)
+        label = matches[1]
+        name = matches[2]
+        full_path = self._find_file_in_include_path(name)
+        if full_path is None:
+            raise AsmMusicFileNotFound(label, name, frame)
+        with open(full_path, "rb") as f:
+            music_data = bytes(f.read())
+        self.music_files[label] = (len(self.music_files), music_data)
+        return True
+
+    def _handle_define_macro(self, frame, line):
+        """Two kinds of macros are supported: global and local.
+            Global macros are identified by the fact that the first letter
+            in the macro is upper case (e.g. "Lalala", "%MY_CONSTANT",
+            "123OK"). All other macros are local and will only be applied
+            within the context of the source file that is currently being
+            processed."""
+        if not DEFINE.match(line):
+            return False
+        matches = DEFINE.search(line)
+        find = matches[1]
+        replace = matches[2]
+        if GLOBAL_MACRO.match(find):
+            self.macros[find] = replace
+            new_macros = True
+        else:
+            frame.macros.add(find, replace)
+            new_local_macros = True
+        return True
+
+    def _handle_other_line(self, frame, line):
+        line = frame.macros.apply(line)
+        line = self.macros.apply(line)
+        self.lines.append((line, frame.source_nr, frame.line_nr))
+
+    def _mangle_local_symbols(self):
+        self.mangle_id += 1
+
+        # Pass 1: mangle all local symbols that are defined.
+        # These are the ones that appear on a line by their own.
+        local_symbols = dict()
+        for i, (line, path, line_nr) in enumerate(self.lines):
+            if LOCAL_SYMBOL.match(line):
+                rewrite = '@__local_%s_%d_%s' % (self.mangle_rand, self.mangle_id, line[1:])
+                local_symbols[line] = rewrite
+                self.lines[i] = (rewrite, path, line_nr)
+
+        # Pass 2: mangle all local symbols that are used as operand
+        # in an opcode and rewrite these, when we've seen a definition
+        # for them in pass 1.
+        for i, (line, path, line_nr) in enumerate(self.lines):
+            if '@' not in line or LOCAL_SYMBOL.match(line):
+                continue
+            opcode, *operands = SPLITTER.split(line)
+            for j, operand in enumerate(operands):
+                mangled = False
+                if operand in local_symbols:
+                    operands[j] = local_symbols[operand]
+                    mangled = True
+                if mangled:
+                    rewrite = '%s %s' % (opcode, ', '.join(operands))
+                    self.lines[i] = (rewrite, path, line_nr)
+
+
+class Macros():
+    """A container that holds a list of simple find/replace macros."""
+    def __init__(self):
+        self._macros = OrderedDict()
+        self._modified = False
+
+    def add(self, find, replace):
+        """Add a new find/replace macro."""
+        self._macros[find] = replace
+        self._modified = True
+
+    def apply(self, data):
+        """Apply the find/replace macros to the provided input.
+           Longer macros are applied before shorter macros."""
+        if self._modified:
+            by_len = lambda x: -len(x[0])
+            self._macros = sorted(self._macros.items(), key=by_len)
+        for find, replace in self._macros.items():
+            data = data.replace(find, replace)
+        return data
+
+
+class StackFrame():
+    """A stack frame, used to remember data that is bound
+       to a single source file. This is used to keep global data
+       and local data separated on recursive source inclusions."""
+    def __init__(self, path, source_nr):
+        self.path = path
+        self.source_nr = source_nr
+        self.line_nr = 0
+        self.macros = Macros()
+
+    @property
+    def location(self):
+        """A string, describing the current file position
+          (<path>:<line number>)."""
+        return "%s:%d" % (self.path, self.line_nr)

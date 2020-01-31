@@ -2,7 +2,7 @@ import re
 from nabaztag.exceptions import UnknownOpcodeError, InvalidOperandsError
 
 
-# In the opcoe definitions below, the supported opcodes are described.
+# In the opcode definitions below, the supported opcodes are described.
 #
 # The main level is a dictionary, in which the keys are the opcode
 # mnemonics and the values are lists that describe the possible forms
@@ -394,7 +394,7 @@ def _parse_operands(specs, opcode, operands):
     raise InvalidOperandsError(opcode, operands)
 
 
-SYMBOLIC_ADDRESS = re.compile('^@(__local\d|[a-zA-Z])\S*$')
+SYMBOLIC_ADDRESS = re.compile('^@(__local_|[a-zA-Z])\S*$')
 REGISTER = re.compile('^R(?:[0-9]|1[0-5])$')
 
 def _try_parse_operand(expected_type, operand):

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 from nabaztag.exceptions import NabaztagException
-from nabaztag.asm.preprocessing import preprocess
+from nabaztag.asm.preprocessing import Preprocessor
 from nabaztag.asm.parsing import parse
 from nabaztag.asm.bytecoding import ast_to_bytecode
 from nabaztag.response import Response, BytecodeFrame
 
 try:
-    lines, sources = preprocess("./ding.basm")
+    lines, sources = Preprocessor("ding.basm").execute()
     ast = parse(lines, sources)
     bytecode = ast_to_bytecode(ast)
 
