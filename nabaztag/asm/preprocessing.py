@@ -2,7 +2,8 @@ import re
 import os.path
 from random import randint
 from collections import OrderedDict
-from nabaztag.exceptions import AsmFileNotFound, AsmMusicFileNotFound
+from nabaztag.exceptions import \
+    AsmFileNotFound, AsmMusicFileNotFound, AsmMusicFileConflict
 
 
 COMMENTS = re.compile('\s*#.*$')
@@ -14,7 +15,8 @@ GLOBAL_MACRO = re.compile('^[^a-z0-9A-Z]*[A-Z]')
 MUSICFILE = re.compile('^music_file (\S+) (.+)$')
 LOCAL_SYMBOL = re.compile('^@(?!__local_)[^a-z0-9A-Z]*[a-z0-9]\S*$')
 SPLITTER = re.compile('(?:\s*,\s*|\s+)')
-
+MUSIC_FILE_REF = re.compile('^music_file:(\S+)$')
+EXTENSION = ".basm"
 
 class Preprocessor():
     def __init__(self, src_path):
@@ -39,13 +41,13 @@ class Preprocessor():
            already established include path. Therefore files that can be
            found in this path will take precedence."""
         self.include_path.insert(0, include_path)
-        return self + ".basm"
+        return self
 
     def execute(self):
         """Run the preprocessor on the provided source file."""
         self._init_working_data()
         self._load(self.src_path)
-        return self.lines, self.sources
+        return self
 
     def _init_working_data(self):
         self.lines = []
@@ -58,7 +60,8 @@ class Preprocessor():
     def _load(self, path, from_frame=None):
         full_path = self._find_file_in_include_path(path)
         if full_path is None:
-            raise AsmFileNotFound(self.src_path, from_frame)
+            location = "preprocessor" if not from_frame else from_frame.location
+            raise AsmFileNotFound(self.src_path, location)
         if self._already_loaded(full_path):
             return
         frame = StackFrame(path, len(self.sources))
@@ -74,6 +77,7 @@ class Preprocessor():
                 self._handle_define_macro(frame, line) or \
                 self._handle_other_line(frame, line)
         self._mangle_local_symbols()
+        self._rewrite_music_file_labels()
 
     def _find_file_in_include_path(self, name):
         for path in self.include_path:
@@ -98,14 +102,19 @@ class Preprocessor():
         if not INCLUDE.match(line):
             return False
         matches = INCLUDE.search(line)
-        name = matches[1]
+        name = matches[1] + EXTENSION
         full_path = self._find_file_in_include_path(name)
         if full_path is None:
-            raise AsmFileNotFound(name, frame)
+            raise AsmFileNotFound(name, frame.location)
         self._load(full_path, frame)
         return True
 
     def _handle_music_file(self, frame, line):
+        """Handle importing a music file into the code, referenced by
+           a label, e.g. "music_file BOOP audio/boop.mid". The label is
+           used to fill the operand register for the WAVPLAY and MIDIPLAY
+           opcodes by referencing "music_file:<label>",
+           e.g. "LD R0 music_file:BOOP"."""
         if not MUSICFILE.match(line):
             return False
         matches = MUSICFILE.search(line)
@@ -113,10 +122,14 @@ class Preprocessor():
         name = matches[2]
         full_path = self._find_file_in_include_path(name)
         if full_path is None:
-            raise AsmMusicFileNotFound(label, name, frame)
+            raise AsmMusicFileNotFound(label, name, frame.location)
+        if label in self.music_files:
+            if self.music_files[label][1] != full_path:
+                raise AsmMusicFileConflict(label, frame.location)
+            return True
         with open(full_path, "rb") as f:
             music_data = bytes(f.read())
-        self.music_files[label] = (len(self.music_files), music_data)
+        self.music_files[label] = (len(self.music_files), full_path, music_data)
         return True
 
     def _handle_define_macro(self, frame, line):
@@ -131,12 +144,8 @@ class Preprocessor():
         matches = DEFINE.search(line)
         find = matches[1]
         replace = matches[2]
-        if GLOBAL_MACRO.match(find):
-            self.macros[find] = replace
-            new_macros = True
-        else:
-            frame.macros.add(find, replace)
-            new_local_macros = True
+        macro_set = self.macros if GLOBAL_MACRO.match(find) else frame.macros
+        macro_set.add(find, replace)
         return True
 
     def _handle_other_line(self, frame, line):
@@ -172,6 +181,29 @@ class Preprocessor():
                     rewrite = '%s %s' % (opcode, ', '.join(operands))
                     self.lines[i] = (rewrite, path, line_nr)
 
+    def _rewrite_music_file_labels(self):
+        """Find all operands that look like a music_file:<label> reference,
+           and replace them with the music file id for that <label>.
+           The files that can be referenced must be registered in the
+           source code using the "music_file <label> <path> directive."""
+        for i, (line, path, line_nr) in enumerate(self.lines):
+            if 'music_file:' not in line:
+                continue
+            opcode, *operands = SPLITTER.split(line)
+            rewritten = False
+            for j, operand in enumerate(operands):
+                if MUSIC_FILE_REF.match(operand):
+                    matches = MUSIC_FILE_REF.search(operand)
+                    label = matches[1]
+                    if label not in self.music_files:
+                        location = "%s:%d" % (path, line_nr)
+                        raise AsmMusicFileLabelUnknown(label, location)
+                    operands[j] = str(self.music_files[label][0])
+                    rewritten = True
+                if rewritten:
+                    rewrite = '%s %s' % (opcode, ', '.join(operands))
+                    self.lines[i] = (rewrite, path, line_nr)
+
 
 class Macros():
     """A container that holds a list of simple find/replace macros."""
@@ -189,7 +221,7 @@ class Macros():
            Longer macros are applied before shorter macros."""
         if self._modified:
             by_len = lambda x: -len(x[0])
-            self._macros = sorted(self._macros.items(), key=by_len)
+            self._macros = OrderedDict(sorted(self._macros.items(), key=by_len))
         for find, replace in self._macros.items():
             data = data.replace(find, replace)
         return data

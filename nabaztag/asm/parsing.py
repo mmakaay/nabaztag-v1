@@ -7,16 +7,18 @@ from nabaztag.asm.opcodes import parse_instruction
 SYMBOL = re.compile('^(@\S*)\s*$')
 SPLITTER = re.compile('(?:\s*,\s*|\s+)')
 
-def parse(lines, sources):
+
+def parse(preprocessed):
     """Take lines of instructions and code sources as provided by the
        preprocessor and parse their contents into an abstract syntax tree."""
     ast = OrderedDict()
     ast["entrypoint"] = []
     instructions = None
 
-    for line, src_nr, line_nr in lines:
+    for line, src_nr, line_nr in preprocessed.lines:
         def syntax_error(msg):
-            raise AsmSyntaxError(msg, sources[src_nr], line_nr)
+            location = "%s:%d" % (preprocessed.sources[src_nr], line_nr)
+            raise AsmSyntaxError(msg, location)
 
         # Handle the start of a new symbol.
         if SYMBOL.match(line):

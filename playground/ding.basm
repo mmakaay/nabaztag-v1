@@ -3,7 +3,7 @@
 # as a test for the assembler and to see if I could play a MIDI file from
 # my toolchain.
 
-music_file DING.MID ding.mid
+music_file DING ding.mid
 
 @Main
     NOP
@@ -16,7 +16,7 @@ music_file DING.MID ding.mid
     INPUT R0, @interrupt_timer
     BSR @leds_off
     BSR @init_audio
-    LD R0, DING.MID
+    LD R0, music_file:DING
     BSR @play_midi_file
     BRA @interrupt_loop
 

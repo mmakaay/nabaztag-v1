@@ -1,5 +1,5 @@
-define %MOTOR_LEFT      0
-define %MOTOR_RIGHT     1
+define %MOTOR_RIGHT     0
+define %MOTOR_LEFT      1
 define %MOTOR_STOP      0
 define %MOTOR_FORWARD   1
 define %MOTOR_REVERSE   2

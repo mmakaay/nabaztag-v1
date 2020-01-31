@@ -1,5 +1,10 @@
-all:
-	PYTHONPATH=.. python3 readmotors2.build
-	PYTHONPATH=.. python3 wiebelen.build
-	PYTHONPATH=.. python3 ding.build
-	PYTHONPATH=.. python3 playmidi.build
+SOURCES := $(wildcard *.basm)
+OUTPUTS := $(patsubst %.basm,%.bin,$(SOURCES)) 
+
+clean:
+	rm $(OUTPUTS)
+
+all: $(OUTPUTS) 
+
+%.bin: %.basm
+	PYTHONPATH=.. ./bassemble $<

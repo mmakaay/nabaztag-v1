@@ -12,7 +12,7 @@ define $threshold       R8
 define $synced          R9
 define $sync_completed  R10
 
-@main
+@Main
     # In the ear syncing code, I let the ears rotate, while keeping
     # a tab on the motor encoder values in a loop. Within that loop,
     # I check if the encoder values have changed. If not, a counter
@@ -72,7 +72,7 @@ define $sync_completed  R10
     CMP $synced, $sync_completed
     BNE @sync_loop
 
-    BRA @idle
+    BRA @EndProgram
 
 @check_for_gap_left
     LD $left_old, $left_new
@@ -82,7 +82,7 @@ define $sync_completed  R10
     BRA @sync_right
 
 @gap_left_found
-    BSR @motor_left_stop
+    BSR @StopLeftMotor()
     OR $synced, 0x10
     BRA @sync_right
 
@@ -94,7 +94,7 @@ define $sync_completed  R10
     BRA @sync_loop
 
 @gap_right_found
-    BSR @motor_right_stop
+    BSR @StopRightMotor()
     OR $synced, 0x01
     BRA @restart_if_not_yet_synced
 

@@ -7,14 +7,19 @@ from nabaztag.asm.opcodes import \
 ENTRYPOINT = 0x0011
 
 
-def ast_to_bytecode(ast):
+def ast_to_bytecode(preprocessed, ast):
+    program_code = _create_program_code(ast)
+    music_data = _create_music_data(preprocessed)
+    return program_code + music_data
+
+def _create_program_code(ast):
     if not ast:
         raise AsmEmptyError()
     _create_entrypoint(ast)
     table = _make_symbol_table(ast)
     _resolve_symbols(ast, table)
-    bytecode = _make_bytecode(ast)
-    return bytecode
+    bytecode = _turn_instructions_into_bytecode(ast)
+    return _as_4_bytes(len(bytecode)) + bytecode
 
 def _create_entrypoint(ast):
     """Inject a fragment of code at the very start of the code tree,
@@ -53,9 +58,28 @@ def _resolve_symbols(ast, table):
                         raise UnresolvedSymbolError(symbol)
                     instruction[3][i] = ('address', table[symbol])
 
-def _make_bytecode(ast):
+def _turn_instructions_into_bytecode(ast):
     bytecode = []
-    for _, (_, block) in enumerate(ast.items()):
+    for block in ast.values():
         for instruction in block:
             bytecode.extend(instruction_to_bytecode(instruction))
     return bytecode
+
+def _create_music_data(preprocessed):
+    count = 0
+    data = []
+    offsets = []
+    for _, _, music_file in preprocessed.music_files.values():
+        count += 1
+        offsets.extend(_as_4_bytes(len(music_file)))
+        data.extend(music_file)
+    return _as_4_bytes(count) + offsets + data
+
+def _as_4_bytes(i):
+    """Return the value of the provided integer as an array of 4 bytes."""
+    return [
+        i >> 0x18 & 0xff,
+        i >> 0x10 & 0xff,
+        i >> 0x08 & 0xff,
+        i >> 0x00 & 0xff
+    ]

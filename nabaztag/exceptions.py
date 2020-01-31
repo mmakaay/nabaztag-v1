@@ -2,23 +2,32 @@ class NabaztagException(Exception):
    pass
 
 class AsmSyntaxError(NabaztagException):
-    def __init__(self, msg, src, line_nr):
-        super().__init__(
-            "%s:%d: %s" %
-            (src, line_nr, msg))
+    def __init__(self, msg, location):
+        super().__init__("%s: %s" % (location, msg))
 
 class AsmFileNotFound(NabaztagException):
-    def __init__(self, name, frame):
-        location = frame.location if frame else ""
+    def __init__(self, name, location):
         super().__init__(
-                "%sFile '%s' not found in search path" % (location, name))
+                "%s: File '%s' not found in search path" %
+                (location, name))
 
 class AsmMusicFileNotFound(NabaztagException):
-    def __init__(self, label, name, frame):
-        location = frame.location if frame else ""
+    def __init__(self, label, name, location):
         super().__init__(
-                "%sMusic file '%s' (label '%s') not found in search path" %
+                "%s: Music file '%s' (label '%s') not found in search path" %
                 (location, name, label))
+
+class AsmMusicFileConflict(NabaztagException):
+    def __init__(self, label, location):
+        super().__init__(
+            "%s: Duplicate use of music file label '%s'" %
+            (location, label))
+
+class AsmMusicFileLabelUnknown(NabaztagException):
+    def __init__(self, label, location):
+        super().__init__(
+            "%s: unknown music file label '%s'" %
+            (location, label))
 
 class UnknownOpcodeError(NabaztagException):
     def __init__(self, opcode):

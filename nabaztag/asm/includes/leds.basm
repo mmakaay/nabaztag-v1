@@ -1,8 +1,8 @@
 define %LED_BOTTOM      0
 define %LED_NOSE        4
-define %LED_LEFT        3
+define %LED_LEFT        1
 define %LED_MIDDLE      2
-define %LED_RIGHT       1
+define %LED_RIGHT       3
 
 define $led R3
 define $led_max R4
