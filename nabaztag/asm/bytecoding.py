@@ -71,8 +71,8 @@ def _create_music_data(preprocessed):
     offsets = []
     for _, _, music_file in preprocessed.music_files.values():
         count += 1
-        offsets.extend(_as_4_bytes(len(music_file)))
         data.extend(music_file)
+        offsets.extend(_as_4_bytes(len(data)))
     return _as_4_bytes(count) + offsets + data
 
 def _as_4_bytes(i):
