@@ -4,47 +4,59 @@ define %LED_LEFT        1
 define %LED_MIDDLE      2
 define %LED_RIGHT       3
 
+# TODO
+define %RED             0
+define %GREEN           1
+
+define $r R0
+define $g R1
+define $b R2
 define $led R3
 define $led_max R4
 define $transition R5
-define $color_R R0
-define $color_G R1
-define $color_B R2
+
+@rgb_off()
+    CLR $r
+    CLR $g
+    CLR $b
+    RTS
+
+@rgb_random()
+    RND $r
+    RND $g
+    RND $b
+    RTS
 
 @TurnAllLedsOff()
-    PUSH 0b000000000, 0b00111111
-    CLR  $color_R
-    CLR  $color_G
-    CLR  $color_B
-    LD   $transition 5
-    LD   $led, %LED_BOTTOM
-    LED  $led, $transition
-    LD   $led, %LED_LEFT
-    LED  $led, $transition
-    LD   $led, %LED_MIDDLE
-    LED  $led, $transition
-    LD   $led, %LED_RIGHT
-    LED  $led, $transition
-    LD   $led, %LED_NOSE
-    LED  $led, $transition
-    PULL 0b000000000, 0b00111111
+    PUSH 0b00000000, 0b00101111
+    BSR @rgb_off()
+    LD $transition 5
+    LD $led, %LED_BOTTOM
+    LED $led, $transition
+    LD $led, %LED_LEFT
+    LED $led, $transition
+    LD $led, %LED_MIDDLE
+    LED $led, $transition
+    LD $led, %LED_RIGHT
+    LED $led, $transition
+    LD $led, %LED_NOSE
+    LED $led, $transition
+    PULL 0b00000000, 0b00101111
     WAIT 1
     RTS
 
 # Move all LEDs to a random color over a short period of time.
 @TwinkleLeds()
-    PUSH 0b00000000, 0b00011111
-    LD   $led 0
-    LD   $led_max %LED_NOSE
-    LD   $transition 20
+    PUSH 0b0000000, 0b00111111
+    CLR $led
+    LD $led_max %LED_NOSE
+    LD $transition 5
 @twinkle_next_led
-    RND  $color_R                 # Generate a random color
-    RND  $color_G
-    RND  $color_B
-    LED  $led, $transition        # Set the LED to the random color
-    INC  $led                     # And do so for all available LEDs
-    CMP  $led $led_max
-    BLE  @twinkle_next_led
-    WAIT $transition              # Wait for the leds to update
-    PULL 0b00000000, 0b00011111
+    BSR @rgb_random()            # Select a random RGB color
+    LED $led, $transition        # Set the LED to the random color
+    INC $led                     # And do so for all available LEDs
+    CMP $led $led_max
+    BLE @twinkle_next_led
+    WAIT $transition             # Wait for the leds to update
+    PULL 0b0000000, 0b00111111
     RTS

@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+
+from nabaztag.asm.opcodes import OPCODES, get_instruction_size
+
+if len(sys.argv) != 2:
+    print("Usage: %s <code file path>" % sys.argv[0])
+    sys.exit(1)
+
+with open(sys.argv[1], 'rb') as f:
+    code = f.read()
+#print(repr(code))
+
+spec_by_opcode = dict((
+    (spec[1], (opcode, get_instruction_size(spec[0]), spec))
+    for opcode in OPCODES
+    for spec in OPCODES[opcode]
+))
+
+pos = 0
+size = 0
+state = 'opener'
+
+for b in code:
+    if state == 'opener':
+        if code[pos] == 0x7f:
+            print("START")
+            state = 'start_operation'
+            pos += 1
+            continue
+    if state == 'start_operation':
+        if code[pos] == 0x05:
+            state = 'code_frame_size'
+            pos += 1
+            continue
+    if state == 'code_frame_size':
+        if len(code[pos:]) >= 8:
+            size = (code[pos] << 16) + (code[pos+1] << 8) + code[pos+2]
+            print("  OPERATION: bytecode frame (%d bytes)" % size)
+            state = 'magic_amber_string'
+            pos += 3
+            continue
+    if state == 'magic_amber_string':
+        if code[pos:pos+5].decode() == 'amber':
+            state = 'code_frame_start'
+            pos += 5
+            continue
+    if state == 'code_frame_start':
+        frame_id = (code[pos] << 24) + (code[pos+1] << 16) + (code[pos+2] << 8) + code[pos+3]
+        pos += 4
+        frame_priority = code[pos]
+        pos += 1
+        size = (code[pos] << 24) + (code[pos+1] << 16) + (code[pos+2] << 8) + code[pos+3]
+        pos += 4
+        print("    CODE id:%d / priority:%d (%d bytes)" % (frame_id, frame_priority, size))
+        state = 'code'
+        continue
+
+    if state == 'code':
+        address = 0x11
+        while size > 0:
+            size -= 1
+            spec = spec_by_opcode[code[pos]]
+            operands = code[pos+1:pos+spec[1]]
+            print("      0x%04x | %s " % (address, spec[0]) + (", ".join(("0x%02x" % o for o in operands))))
+            address += spec[1]
+            pos += spec[1]
+
+    print("Unexpected data at byte %d (expected: %s)" % (pos, state))
+    print("Upcoming bytes: " + " ".join("%02x" % b for b in (code[pos:pos+200])))
+    sys.exit(1)

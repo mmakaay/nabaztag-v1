@@ -4,7 +4,7 @@ OUTPUTS := $(patsubst %.basm,%.bin,$(SOURCES))
 all: $(OUTPUTS) 
 
 %.bin: %.basm
-	PYTHONPATH=.. ./bassemble $<
+	../basm_assembler $<
 
 clean:
 	rm -f $(OUTPUTS)

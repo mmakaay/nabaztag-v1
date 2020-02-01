@@ -1,22 +1,61 @@
-music_file LIEF liefkleinkonijntje.mid
+include base
+include leds
+
+music_file HUPPEL wiebelen.vox
 
 @Main
-    LD R0 255
+    LD R0 1
+    LD R1 255
+    PALETTE R0, R1
+    LD R4 %LED_NOSE
+    LD R5 10
+    LED R4, R5
+    LD R0 0
+    LD R1 0
+    PALETTE R0, R1
+    LD R4 %LED_NOSE
+    LD R5 10
+    LED R4, R5
+    LD R0 1
+    LD R1 255
+    PALETTE R0, R1
+    LD R4 %LED_NOSE
+    LD R5 10
+    LED R4, R5
+    LD R0 0
+    LD R1 0
+    PALETTE R0, R1
+    LD R4 %LED_NOSE
+    LD R5 10
+    LED R4, R5
+    LD R0 1
+    LD R1 255
+    PALETTE R0, R1
+    LD R4 %LED_NOSE
+    LD R5 10
+    LED R4, R5
+    LD R0 0
+    LD R1 0
+    PALETTE R0, R1
+    LD R4 %LED_NOSE
+    LD R5 10
+    LED R4, R5
+
+    LD R0 100
     MVOL R0
-    LD R0 128
+    LD R0 100
     VOL R0
 
-    LD R0, music_file:LIEF
-    MIDIPLAY R0
-@end
-    # Change nose color based on player status
-    WAIT 1
-    MUSIC R0
-    LD R1, 255
-    INC R0
-    PALETTE R0, R1
-    LD R3, 4
-    LD R4, 10
-    LED R3, R4
+    LD R0, music_file:HUPPEL
+    WAVPLAY R0
 
+@wait_for_end_of_music
+    BSR @TwinkleLeds()
+    MUSIC R0
+    TST R0
+    BNE @wait_for_end_of_music
+    BSR @TurnAllLedsOff()
+
+@end
+    WAIT 10
     BRA @end

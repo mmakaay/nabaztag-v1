@@ -418,8 +418,7 @@ def _try_parse_operand(expected_type, operand):
     return None
 
 
-def get_instruction_size(instruction):
-    opcode_type = instruction[2]
+def get_instruction_size(opcode_type):
     if opcode_type == 'o':
         return 1
     elif opcode_type in ['i', 'r', 'ri', 'rr']:

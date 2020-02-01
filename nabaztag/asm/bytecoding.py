@@ -45,7 +45,7 @@ def _make_symbol_table(ast):
 
 def _get_block_size(block):
     """Compute the byte size of a code block."""
-    return sum((get_instruction_size(i) for i in block))
+    return sum((get_instruction_size(i[2]) for i in block))
 
 def _resolve_symbols(ast, table):
     """Go over the syntax tree, and try to resolve all values of
