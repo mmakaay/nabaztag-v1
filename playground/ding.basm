@@ -3,7 +3,7 @@
 # as a test for the assembler and to see if I could play a MIDI file from
 # my toolchain.
 
-music_file DING ding.mid
+music_file DING midi/ding.mid
 
 @Main
     NOP

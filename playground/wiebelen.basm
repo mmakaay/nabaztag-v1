@@ -1,7 +1,7 @@
 include base
 include leds
 
-music_file HUPPEL wiebelen.vox
+music_file HUPPEL audio/wiebelen.vox
 
 @Main
     LD R0 1

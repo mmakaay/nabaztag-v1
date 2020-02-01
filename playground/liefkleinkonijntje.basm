@@ -1,6 +1,6 @@
 include leds
 
-music_file LIEF liefkleinkonijntje.mid
+music_file LIEF midi/liefkleinkonijntje.mid
 
 @Main
     LD R0 255

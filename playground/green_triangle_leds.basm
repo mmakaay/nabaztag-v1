@@ -1,0 +1,53 @@
+include leds
+
+define $color      R0
+define $brightness R1
+define $r          R0
+define $g          R1
+define $b          R2
+define $led        R3
+define $time       R4
+define $ontime     R5
+define $offtime    R6
+
+
+@Main
+    BSR @TurnAllLedsOff()
+    LD $time, 20
+    LD $ontime, 0 
+    LD $offtime, 10
+
+@loop
+    LD $led, %LED_RIGHT
+    BSR @turn_led_off
+    LD $led %LED_NOSE 
+    BSR @turn_led_on
+    WAIT $time
+
+    LD $led, %LED_NOSE
+    BSR @turn_led_off
+    LD $led %LED_LEFT
+    BSR @turn_led_on
+    WAIT $time
+
+    LD $led, %LED_LEFT
+    BSR @turn_led_off
+    LD $led, %LED_RIGHT
+    BSR @turn_led_on
+    WAIT $time
+
+    BRA @loop
+
+@turn_led_on
+    LD $color, %GREEN
+    LD $brightness, 255
+    PALETTE $color, $brightness
+    LED $led, $ontime 
+    RTS
+
+@turn_led_off
+    LD $color, %OFF
+    LD $brightness, 255
+    PALETTE $color, $brightness
+    LED $led, $offtime
+    RTS

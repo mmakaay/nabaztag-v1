@@ -1,0 +1,85 @@
+include leds
+
+music_file KITT midi/knightrider0.mid
+
+define $vol    R0
+define $r      R0
+define $g      R1
+define $b      R2
+define $led    R3
+define $time   R4
+define $status R5
+
+
+@Main
+    BSR @TurnAllLedsOff()
+
+    # Set volume
+    LD $vol 255
+    MVOL $vol
+    LD $vol 150
+    VOL $vol
+
+    # LED settings
+    LD $r 0
+    LD $g 0
+    LD $b 0
+    LD $time 5
+
+    # Start MIDI playback
+    LD R0, music_file:KITT
+    MIDIPLAY R0
+
+@wait_for_end_of_midi
+    LD $r, 0
+    LD $led %LED_MIDDLE
+    LD $time, 5
+    LED $led, $time
+
+    LD $led %LED_LEFT
+    LD $r, 255
+    LD $time, 5
+    LED $led, $time
+    WAIT 5
+
+    LD $r, 0
+    LD $led %LED_LEFT
+    LD $time, 10
+    LED $led, $time
+
+    LD $led %LED_MIDDLE
+    LD $r, 255
+    LD $time, 5
+    LED $led, $time
+    WAIT 5
+
+    LD $r, 0
+    LD $led %LED_MIDDLE
+    LD $time, 5
+    LED $led, $time
+
+    LD $led %LED_RIGHT
+    LD $r, 255
+    LD $time, 5
+    LED $led, $time
+    WAIT 5
+
+    LD $r, 0
+    LD $led %LED_RIGHT
+    LD $time, 10
+    LED $led, $time
+
+    LD $led %LED_MIDDLE
+    LD $r, 255
+    LD $time, 5
+    LED $led, $time
+    WAIT 5
+
+    MUSIC R0
+    TST R0
+    BNE @wait_for_end_of_midi
+    BSR @TurnAllLedsOff()
+
+@end
+    WAIT 10
+    BRA @end

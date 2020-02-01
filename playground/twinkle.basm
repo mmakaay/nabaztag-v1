@@ -3,6 +3,6 @@ include ears
 
 @Main
     BSR @Reset()
-@idle
+@loop
     BSR @TwinkleLeds()
-    BRA @idle
+    BRA @loop
