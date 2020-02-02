@@ -1,0 +1,10 @@
+include base
+
+music_file DONG midi/2notesD4A5.mid
+
+@Main
+    BSR @TurnAllLedsOff()
+    BSR @TurnSoundOff()
+    LD R0, music_file:DONG
+    MIDIPLAY R0
+    BRA @EndProgram

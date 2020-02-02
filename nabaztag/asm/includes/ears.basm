@@ -1,28 +1,55 @@
 include motors
 include ram
 
-# In the ear syncing code, I let the ears rotate, while keeping
-# a tab on the motor encoder values in a loop. Within that loop,
-# I check if the encoder values have changed. If not, a counter
-# for the respective motor is incremented.
-# When the value for a motor encoder has changed, its counter
-# acts a measure for the amount of time that has passed between
-# two value changes.
+# Both ear motors have a related encoder unit, which can be used to
+# determine the position of the ears. This encoder is a 20 teeth wheel,
+# which misses 3 of its teeth. An IR sensor looks at the wheel, and
+# every time a tooth is in front of the sensor, the encoder value is
+# incremented. One rotation of the ears will result in one rotation
+# of the wheel as well. The 3 teeth gap is used to identify the home
+# position of the ears.
+# 
+# Here's a schema of the way in which the encoder wheels are laid out:
 #
-# Since the encoder makes use of a gap for encoding its starting
-# position, we can make use of the counter to find this starting
-# position. The counter will be higher than between two regular
-# encoder value changes.
+#               |
+#       \   04 03 02   /<.
+#        05          01    `  encoder gap
+#      06              ..    ` 
+#     07                ..    |
+#  -- 08                .. -- +
+#     09                17
+#      10              16
+#        11          15
+#       /   12 13 14   \
+#               |
 #
-# Based on experimentation, I found that threshold values from 7 to
-# 25 yielded good results for syncing up the ear motors with the
-# encoder gap. Below 7, the gap was detected too soon. Above 25,
-# the gap was not detected. Thresholds close to these boundaries
+# In the ear syncing code, I let the ears rotate, while keeping a tab on
+# the motor encoder values. As long as an encoder value does not change,
+# a counter for the respective motor is incremented. As soon as the value
+# does change, the counter acts a measure for the amount of time that has
+# passed between two of the encoder wheel teeth.
+#
+# When the encoder has passed the 3 teeth gap, the counter will be higher
+# than the counters between two regular teeth. Therefore, the counter can
+# be used to identify the starting position.
+#
+# Based on experimentation, I found that threshold values from 7 to 25
+# yield good results for syncing up the ear motors with the encoder gap.
+# 
+# Below 7, the gap was sometimes falsely detected too soon. Above 25,
+# the gap was not detected at all. Thresholds close to these boundaries
 # produced unpredictable results.
 #
-# This is good! There is a wide range of thresholds that do work,
-# so we can use a value smack in the middle and rest assured that
-# this will likely work on other people's bunnies too.
+# This is good! There is a wide range of thresholds that do work. To let
+# the sync work as quick as possible, I chose a value on the low side.
+# If other people's bunnies have troubles with this (resulting in failing
+# sync, stopping the ear before the sync point) the value might have to
+# be adjusted to a higher value.
+#
+# Note that these measurements highly depend on the exact code that is
+# used for syncing. WHen the code changes, I'll have to do new measurements.
+# It might be a good idea to start using time-based gap detection, since
+# that might be less dependent on the exact code structure.
 
 @SyncEars()
     define $left         R0
@@ -38,14 +65,14 @@ include ram
 
     PUSH 0xff, 0xff               # Allows me to fiddle with all registers
 
-    LD $threshold, 16             # Gap detection threshold, see above
+    LD $threshold, 9              # Gap detection threshold, see above
     LD $sync_state 0x11           # To keep track if both ears are synced
     LD $left %MOTOR_LEFT          # Left motor number
     LD $right %MOTOR_RIGHT        # Right motor number
 
     BSR @ReverseLeftMotor()       # First, start both motors to make the ears
     BSR @ReverseRightMotor()      # turn in reverse direction. When they were
-    WAIT 25                       # up and synced, this will speed up syncing
+    WAIT 30                       # up and synced before, this speeds up syncing
 
     BSR @ForwardLeftMotor()       # Now start both motors to make the ears
     BSR @ForwardRightMotor()      # turn in the forward direction

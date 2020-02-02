@@ -1,0 +1,18 @@
+include base
+
+music_file DING midi/ding.mid
+
+@Main
+    BSR @TurnAllLedsOff()
+    BSR @TurnSoundOff()
+    LD R0, music_file:DING
+    MIDIPLAY R0
+
+    LD R0 0xff
+    LD R1 0x00
+    LD R2 0x00
+    LD R3 %LED_NOSE
+    LD R4 100
+    LED R3, R4
+
+    BRA @EndProgram

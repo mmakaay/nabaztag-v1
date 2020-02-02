@@ -1,40 +1,22 @@
-include leds
+include base
 
-music_file RESPECT audio/wiebelen.vox
+music_file V1 audio/music_0.vox
+music_file V2 audio/music_1.vox
 
-define %max_wav     0
-define $wav_file    R0
-define $max_wav     R1
-define $status      R2
+define $vol      R0
+define $wav_file R0
 
 @Main
-    LD R0, 255
-    MVOL R0
-    LD R0, 150
-    VOL R0
+    BSR @TurnSoundOff()
 
-    LD $wav_file 0
-    LD $max_wav %max_wav
+    LD $vol, 255
+    MVOL $vol
+    LD $vol, 150
+    VOL $vol
 
-@play_wav
-    MIDIPLAY $wav_file
+    LD $wav_file, music_file:V1
+    WAVPLAY $wav_file
 
-@wait_for_end_of_wav
-    BSR @TwinkleLeds()
-    MUSIC $status
-    TST $status
-    BNE @wait_for_end_of_wav
-    BSR @TurnAllLedsOff()
-
-@wait_for_buttonpress_to_play_next_wav
-    WAIT 1
-    PUSHBUTTON $status
-    TST $status
-    BEQ @wait_for_buttonpress_to_play_next_wav
-
-@select_next_wav
-    INC $wav_file
-    CMP $wav_file $max_wav
-    BLE @play_wav
-    CLR $wav_file
-    BLE @play_wav
+@end
+    WAIT 20
+    BRA @end

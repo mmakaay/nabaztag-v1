@@ -33,6 +33,9 @@ class UnknownOpcodeError(NabaztagException):
     def __init__(self, opcode):
         super().__init__("Unknown opcode: %s" % opcode)
 
+class UnknownBytecodeError(NabaztagException):
+    def __init__(self, bytecode):
+        super().__init__("Unknown bytecode: 0x%02x" % bytecode)
 
 class InvalidOperandsError(NabaztagException):
     def __init__(self, opcode, operands):

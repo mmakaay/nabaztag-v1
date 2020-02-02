@@ -41,8 +41,8 @@ class BytecodeFrame():
     """This class implements a bytecode frame operation for the Nabaztag
        virtual machine. Such operation contains program code and optionally
        audio files (MIDI or ADPCM2)."""
-    def __init__(self, bytecode=[], id=1, priority=1):
-        self.id = id
+    def __init__(self, bytecode=[], frame_id=1, priority=1):
+        self.frame_id = frame_id
         self.priority = priority
         self.bytecode = bytecode
 
@@ -65,8 +65,8 @@ class BytecodeFrame():
         return frame
 
     def _get_id_bytes(self):
-        id = 1 if not self.id else self.id
-        return _as_4_bytes(self.id)
+        frame_id = 1 if not self.frame_id else self.frame_id
+        return _as_4_bytes(self.frame_id)
 
     def _get_priority_bytes(self):
         priority = 1 if not self.priority else self.priority

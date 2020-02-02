@@ -1,6 +1,6 @@
 include leds
 
-music_file KITT midi/knightrider0.mid
+music_file KITT midi/knightrider.mid
 
 define $vol    R0
 define $r      R0

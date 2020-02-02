@@ -3,7 +3,7 @@
 import sys
 import os
 
-from nabaztag.asm.opcodes import OPCODES, get_instruction_size
+from nabaztag.asm.opcodes import bytecode_to_instruction, format_operand
 
 if len(sys.argv) != 2:
     print("Usage: %s <code file path>" % sys.argv[0])
@@ -12,12 +12,6 @@ if len(sys.argv) != 2:
 with open(sys.argv[1], 'rb') as f:
     code = f.read()
 #print(repr(code))
-
-spec_by_opcode = dict((
-    (spec[1], (opcode, get_instruction_size(spec[0]), spec))
-    for opcode in OPCODES
-    for spec in OPCODES[opcode]
-))
 
 pos = 0
 size = 0
@@ -30,11 +24,16 @@ for b in code:
             state = 'start_operation'
             pos += 1
             continue
+
     if state == 'start_operation':
         if code[pos] == 0x05:
             state = 'code_frame_size'
             pos += 1
             continue
+        if code[pos] == 0xff:
+            print("END")
+            sys.exit()
+
     if state == 'code_frame_size':
         if len(code[pos:]) >= 8:
             size = (code[pos] << 16) + (code[pos+1] << 8) + code[pos+2]
@@ -42,11 +41,13 @@ for b in code:
             state = 'magic_amber_string'
             pos += 3
             continue
+
     if state == 'magic_amber_string':
-        if code[pos:pos+5].decode() == 'amber':
+        if code[pos:pos+5].decode('iso-8859-1') == 'amber':
             state = 'code_frame_start'
             pos += 5
             continue
+
     if state == 'code_frame_start':
         frame_id = (code[pos] << 24) + (code[pos+1] << 16) + (code[pos+2] << 8) + code[pos+3]
         pos += 4
@@ -61,13 +62,63 @@ for b in code:
     if state == 'code':
         address = 0x11
         while size > 0:
-            size -= 1
-            spec = spec_by_opcode[code[pos]]
-            operands = code[pos+1:pos+spec[1]]
-            print("      0x%04x | %s " % (address, spec[0]) + (", ".join(("0x%02x" % o for o in operands))))
-            address += spec[1]
-            pos += spec[1]
+            opcode, operands, instruction_size = bytecode_to_instruction(code[pos:])
+            formatted_operands = ", ".join((format_operand(o) for o in operands))
+            raw = " ".join(("0x%02x" % v for v in code[pos:pos+instruction_size]))
+            instruction = "%s %s" % (opcode, formatted_operands)
+            print("      0x%04x | %-20s (%s)" % (address, instruction, raw))
+            address += instruction_size
+            pos += instruction_size
+            size -= instruction_size
+        state = 'music_files'
+        continue
+
+    if state == 'music_files':
+        count = (code[pos] << 24) + (code[pos+1] << 16) + (code[pos+2] << 8) + code[pos+3]
+        print("    MUSIC FILES: %d" % count)
+        pos += 4
+
+        files = []
+        size = 0
+        prev_offset = 0
+        for nr in range(0, count):
+            offset = (code[pos] << 24) + (code[pos+1] << 16) + (code[pos+2] << 8) + code[pos+3]
+            size = offset - prev_offset
+            prev_offset = offset
+            files.append((nr, size))
+            pos += 4
+
+        for nr, size in files:      
+            music_file = code[pos:pos+size]
+            if music_file[0:4].decode('iso-8859-1') == 'MThd':
+                midi_type = (music_file[8] << 8) + music_file[9]
+                music_type = 'MIDI type %d' % midi_type
+                extension = 'mid'
+            else:
+                music_type = 'VOX'
+                extension = 'vox'
+            path = "/tmp/music_%d.%s" % (nr, extension)
+            with open(path, "wb") as f:
+                f.write(music_file)
+
+            print("      FILE nr %d (%s, %d bytes, %s)" % (nr, music_type, size, path))
+            pos += size
+        state = 'checksum'
+        continue
+
+    if state == 'checksum':
+        checksum = code[pos]
+        print("    CHECKSUM: 0x%02x" % checksum)
+        pos += 1
+        state = 'magic_mind_string'
+        continue
+
+    if state == 'magic_mind_string':
+        if code[pos:pos+4].decode('iso-8859-1') == 'mind':
+            state = 'start_operation'
+            pos += 4
+            continue
 
     print("Unexpected data at byte %d (expected: %s)" % (pos, state))
-    print("Upcoming bytes: " + " ".join("%02x" % b for b in (code[pos:pos+200])))
+    print("Upcoming bytes: " + " ".join("%02x" % b for b in (code[pos:pos+40])))
     sys.exit(1)

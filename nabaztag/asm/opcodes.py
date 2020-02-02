@@ -1,5 +1,6 @@
 import re
-from nabaztag.exceptions import UnknownOpcodeError, InvalidOperandsError
+from nabaztag.exceptions import \
+    UnknownOpcodeError, InvalidOperandsError, UnknownBytecodeError
 
 
 # In the opcode definitions below, the supported opcodes are described.
@@ -340,7 +341,6 @@ OPCODES = {
             'Register to hold the least significant result byte')]
 }
 
-
 def parse_instruction(opcode, operands):
     opcode, specs = _get_opcode_specs(opcode)
     spec, parsed_operands = _parse_operands(specs, opcode, operands)
@@ -418,63 +418,63 @@ def _try_parse_operand(expected_type, operand):
     return None
 
 
-def get_instruction_size(opcode_type):
-    if opcode_type == 'o':
+def get_instruction_size(operand_types):
+    if operand_types == 'o':
         return 1
-    elif opcode_type in ['i', 'r', 'ri', 'rr']:
+    elif operand_types in ['i', 'r', 'ri', 'rr']:
         return 2
-    elif opcode_type in ['ii', 'rir', 'w']:
+    elif operand_types in ['ii', 'rir', 'w']:
         return 3
-    elif opcode_type in ['rw', 'rrw']:
+    elif operand_types in ['rw', 'rrw']:
         return 4
     else:
-        raise NotImplementedError("opcode type '%s'" % opcode_type)
+        raise NotImplementedError("opcode type '%s'" % operand_types)
 
 
 def instruction_to_bytecode(instruction):
-    _, opcode, opcode_type, operands = instruction
-    if opcode_type == 'o':
+    _, opcode, operand_types, operands = instruction
+    if operand_types == 'o':
         # Not operands, just an opcode.
         yield opcode
-    elif opcode_type == 'i':
+    elif operand_types == 'i':
         # An 8-bit integer. The operand byte stores the integer value.
         yield opcode
         yield operands[0][1]
-    elif opcode_type == 'r':
+    elif operand_types == 'r':
         # A register. The 4 least significant bytes of the operand byte
         # store the register.
         yield opcode
         yield operands[0][1]
-    elif opcode_type == 'ri':
+    elif operand_types == 'ri':
         # The opcode uses the 4 most significant bits. The 4 least
         # significant bits store the register. The integer value is
         # added as the second byte.
         yield opcode + operands[0][1]
         yield operands[1][1]
-    elif opcode_type == 'rr':
+    elif operand_types == 'rr':
         # Two registers. The first uses the 4 most significant bits of
         # the operand, the second uses the 4 least significant bits.
         yield opcode
         yield (operands[0][1] << 4) + (operands[1][1] & 0x0f)
-    elif opcode_type == 'ii':
+    elif operand_types == 'ii':
         # Two integers. The first uses the first and the second uses the
         # second operand byte.
         yield opcode
         yield operands[0][1]
         yield operands[1][1]
-    elif opcode_type == 'rir':
+    elif operand_types == 'rir':
         # Two registers and an integer. The first byte of the operand
         # combines the two register (just like with 'rr'), the second
         # operand byte holds the integer value.
         yield opcode
         yield (operands[0][1] << 4) + operands[2][1]
         yield operands[1][1]
-    elif opcode_type == 'w':
+    elif operand_types == 'w':
         # A 16-byte address, stored in two bytes, BigEndian order.
         yield opcode
         yield operands[0][1] >> 8 & 0xff
         yield operands[0][1] >> 0 & 0xff
-    elif opcode_type == 'rw':
+    elif operand_types == 'rw':
         # A register and a 16-byte address. The register is stored in the
         # 4 least significant bits of the first operand byte. The address
         # is stored in the following two operand bytes (just like with 'w').
@@ -482,7 +482,7 @@ def instruction_to_bytecode(instruction):
         yield operands[0][1]
         yield operands[1][1] >> 8 & 0xff
         yield operands[1][1] >> 0 & 0xff
-    elif opcode_type == 'rrw':
+    elif operand_types == 'rrw':
         # Two registers and a 16-byte address. The first operand byte
         # combines the two registers (just like with 'rr'). The address
         # is stored in the following two operand bytes (just like with 'w').
@@ -491,4 +491,94 @@ def instruction_to_bytecode(instruction):
         yield operands[2][1] >> 8 & 0xff
         yield operands[2][1] >> 0 & 0xff
     else:
-        raise NotImplementedError("opcode type '%s'" % opcode_type)
+        raise NotImplementedError("operands type '%s'" % operand_types)
+
+
+# Key: bytecode, Value: (opcode, operand types, instruction size)
+OPCODE_BY_BYTECODE = dict((
+    (spec[1], (opcode, spec[0], get_instruction_size(spec[0])))
+     for opcode in OPCODES
+     for spec in OPCODES[opcode]
+))
+
+
+def bytecode_to_instruction(bytecode):
+    try:
+        opbyte = bytecode[0]
+        if opbyte < 0x70:
+            opbyte = opbyte & 0xf0
+        opcode, operand_types, size  = OPCODE_BY_BYTECODE[opbyte]
+    except KeyError:
+        raise UnknownOpcodeError(bytecode[0])
+
+    if operand_types == 'o':
+        # Not operands, just an opcode.
+        operands = []
+    elif operand_types == 'i':
+        # An 8-bit integer. The operand byte stores the integer value.
+        operands = [('integer', bytecode[1])]
+    elif operand_types == 'r':
+        # A register. The 4 least significant bytes of the operand byte
+        # store the register.
+        if bytecode[0] < 0x70:
+            r = bytecode[0] & 0x0f
+        else:
+            r = bytecode[1]
+        operands = [('register', r)] 
+    elif operand_types == 'ri':
+        # The opcode uses the 4 most significant bits. The 4 least
+        # significant bits store the register. The integer value is
+        # added as the second byte.
+        r = bytecode[0] & 0x0f
+        operands = [('register', r), ('integer', bytecode[1])]
+    elif operand_types == 'rr':
+        # Two registers. The first uses the 4 most significant bits of
+        # the operand, the second uses the 4 least significant bits.
+        r1 = (bytecode[1] & 0xf0) >> 4
+        r2 = bytecode[1] & 0x0f
+        operands = [('register', r1), ('register', r2)]
+    elif operand_types == 'ii':
+        # Two integers. The first uses the first and the second uses the
+        # second operand byte.
+        operands = [('register', bytecode[1]), ('register', bytecode[2])]
+    elif operand_types == 'rir':
+        # Two registers and an integer. The first byte of the operand
+        # combines the two register (just like with 'rr'), the second
+        # operand byte holds the integer value.
+        r1 = bytecode[1] & 0xf0
+        r2 = bytecode[1] & 0x0f
+        operands = [('register', r1), ('integer', bytecode[2]), ('register', r2)]
+    elif operand_types == 'w':
+        # A 16-byte address, stored in two bytes, BigEndian order.
+        address = (bytecode[1] << 8) + bytecode[2]
+        operands = [('address', address)]
+    elif operand_types == 'rw':
+        # A register and a 16-byte address. The register is stored in the
+        # 4 least significant bits of the first operand byte. The address
+        # is stored in the following two operand bytes (just like with 'w').
+        address = (bytecode[1] << 8) + bytecode[2]
+        operands = [('register', bytecode[1] & 0x0f), ('address', address)]
+    elif operand_types == 'rrw':
+        # Two registers and a 16-byte address. The first operand byte
+        # combines the two registers (just like with 'rr'). The address
+        # is stored in the following two operand bytes (just like with 'w').
+        r1 = bytecode[1] & 0xf0
+        r2 = bytecode[1] & 0x0f
+        address = (bytecode[2] << 8) + bytecode[3]
+        operands = [('register', r1), ('register', r2), ('address', address)]
+    else:
+        raise NotImplementedError("operands type '%s'" % operand_types)
+
+    return (opcode, operands, size)
+
+
+def format_operand(operand):
+    operand_type, value = operand
+    if operand_type == 'integer':
+        return "%d" % value
+    elif operand_type == 'register':
+        return "R%d" % value
+    elif operand_type == 'address':
+        return "0x%04x" % value
+    else:
+        return repr(operand)

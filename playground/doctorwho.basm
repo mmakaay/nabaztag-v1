@@ -1,0 +1,23 @@
+include leds
+
+music_file TARDIS midi/doctorwho.mid
+
+define $vol  R0
+define $file R0
+
+@Main
+    BSR @TurnAllLedsOff()
+
+    # Set volume
+    LD $vol 255
+    MVOL $vol
+    LD $vol 150
+    VOL $vol
+
+    # Start MIDI playback
+    LD $file, music_file:TARDIS
+    MIDIPLAY $file
+
+@end
+    WAIT 10
+    BRA @end
