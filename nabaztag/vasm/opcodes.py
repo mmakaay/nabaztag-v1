@@ -338,7 +338,13 @@ OPCODES = {
     'LASTPING': [
         ('rr', 0xc6, 'Get 16-bit time in seconds since last server contact',
             'Register to hold the most significant result byte',
-            'Register to hold the least significant result byte')]
+            'Register to hold the least significant result byte')],
+    'FCB': [
+        ('i+', None, 'Form Constant Byte, defines byte integers in a table',
+            'A list of byte integers of arbitrary length')],
+    'FDB': [
+        ('w+', None, 'Form Double Byte, defines addresses in a table',
+            'A list of addresses of arbitrary length')],
 }
 
 def parse_instruction(opcode, operands):
@@ -373,6 +379,13 @@ def _parse_operands(specs, opcode, operands):
             if operands:
                 continue
             return spec, []
+
+        # Check for table data operands. Rewrite the spec on the
+        # fly, based on the available input.
+        if spec[0] == 'i+':
+            spec = ('i' * len(operands), None)
+        elif spec[0] == 'w+':
+            spec = ('w' * len(operands), None)
 
         # Check for mismatch in number of operands.
         if len(spec[0]) != len(operands):
@@ -417,88 +430,105 @@ def _try_parse_operand(expected_type, operand):
         pass
     return None
 
+TABLE_i = re.compile('^i+$')
+TABLE_w = re.compile('^w+$')
 
-def get_instruction_size(operand_types):
+def get_instruction_size(bytecode, operand_types):
+    # Standard opcodes.
+    operand_len = 0 if bytecode is None else 1
     if operand_types == 'o':
-        return 1
+        return operand_len
     elif operand_types in ['i', 'r', 'ri', 'rr']:
-        return 2
+        return operand_len + 1
     elif operand_types in ['ii', 'rir', 'w']:
-        return 3
+        return operand_len + 2
     elif operand_types in ['rw', 'rrw']:
-        return 4
+        return operand_len + 3
+    # Dynamically sized table data.
+    elif TABLE_i.match(operand_types):
+        return len(operand_types)
+    elif TABLE_w.match(operand_types):
+        return len(operand_types) * 2
     else:
         raise NotImplementedError("opcode type '%s'" % operand_types)
 
 
 def instruction_to_bytecode(instruction):
     _, opcode, operand_types, operands = instruction
-    if operand_types == 'o':
+    if operand_types == 'o' and opcode is not None:
         # Not operands, just an opcode.
         yield opcode
-    elif operand_types == 'i':
+    elif operand_types == 'i' and opcode is not None:
         # An 8-bit integer. The operand byte stores the integer value.
         yield opcode
         yield operands[0][1]
-    elif operand_types == 'r':
+    elif operand_types == 'r' and opcode is not None:
         # A register. The 4 least significant bytes of the operand byte
         # store the register.
         yield opcode
         yield operands[0][1]
-    elif operand_types == 'ri':
+    elif operand_types == 'ri' and opcode is not None:
         # The opcode uses the 4 most significant bits. The 4 least
         # significant bits store the register. The integer value is
         # added as the second byte.
         yield opcode + operands[0][1]
         yield operands[1][1]
-    elif operand_types == 'rr':
+    elif operand_types == 'rr' and opcode is not None:
         # Two registers. The first uses the 4 most significant bits of
         # the operand, the second uses the 4 least significant bits.
         yield opcode
         yield (operands[0][1] << 4) + (operands[1][1] & 0x0f)
-    elif operand_types == 'ii':
+    elif operand_types == 'ii' and opcode is not None:
         # Two integers. The first uses the first and the second uses the
         # second operand byte.
         yield opcode
         yield operands[0][1]
         yield operands[1][1]
-    elif operand_types == 'rir':
+    elif operand_types == 'rir' and opcode is not None:
         # Two registers and an integer. The first byte of the operand
         # combines the two register (just like with 'rr'), the second
         # operand byte holds the integer value.
         yield opcode
         yield (operands[0][1] << 4) + operands[2][1]
         yield operands[1][1]
-    elif operand_types == 'w':
+    elif operand_types == 'w' and opcode is not None:
         # A 16-byte address, stored in two bytes, BigEndian order.
         yield opcode
-        yield operands[0][1] >> 8 & 0xff
-        yield operands[0][1] >> 0 & 0xff
-    elif operand_types == 'rw':
+        yield (operands[0][1] >> 8) & 0xff
+        yield (operands[0][1] >> 0) & 0xff
+    elif operand_types == 'rw' and opcode is not None:
         # A register and a 16-byte address. The register is stored in the
         # 4 least significant bits of the first operand byte. The address
         # is stored in the following two operand bytes (just like with 'w').
         yield opcode
         yield operands[0][1]
-        yield operands[1][1] >> 8 & 0xff
-        yield operands[1][1] >> 0 & 0xff
-    elif operand_types == 'rrw':
+        yield (operands[1][1] >> 8) & 0xff
+        yield (operands[1][1] >> 0) & 0xff
+    elif operand_types == 'rrw' and opcode is not None:
         # Two registers and a 16-byte address. The first operand byte
         # combines the two registers (just like with 'rr'). The address
         # is stored in the following two operand bytes (just like with 'w').
         yield opcode
         yield (operands[0][1] << 4) + operands[1][1]
-        yield operands[2][1] >> 8 & 0xff
-        yield operands[2][1] >> 0 & 0xff
+        yield (operands[2][1] >> 8) & 0xff
+        yield (operands[2][1] >> 0) & 0xff
+    elif TABLE_i.match(operand_types) and opcode is None:
+        for operand in operands:
+            yield operand[1] & 0xff
+    elif TABLE_w.match(operand_types) and opcode is None:
+        for _, address in operands:
+            yield (address >> 8) & 0xff
+            yield (address >> 0) & 0xff
     else:
         raise NotImplementedError("operands type '%s'" % operand_types)
 
 
 # Key: bytecode, Value: (opcode, operand types, instruction size)
 OPCODE_BY_BYTECODE = dict((
-    (spec[1], (opcode, spec[0], get_instruction_size(spec[0])))
+    (spec[1], (opcode, spec[0], get_instruction_size(spec[1], spec[0])))
      for opcode in OPCODES
      for spec in OPCODES[opcode]
+     if spec[1] is not None # skip dynamic table data opcodes
 ))
 
 

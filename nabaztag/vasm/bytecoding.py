@@ -16,8 +16,8 @@ def _create_program_code(ast):
     if not ast:
         raise AsmEmptyError()
     _create_entrypoint(ast)
-    table = _make_symbol_table(ast)
-    _resolve_symbols(ast, table)
+    symbol_table = _make_symbol_table(ast)
+    _resolve_symbols(ast, symbol_table)
     bytecode = _turn_instructions_into_bytecode(ast)
     return _as_4_bytes(len(bytecode)) + bytecode
 
@@ -35,28 +35,28 @@ def _create_entrypoint(ast):
     ast["entrypoint"] = entrypoint
 
 def _make_symbol_table(ast):
-    """Create a table that map symbols to their respective addresses."""
+    """Create a symbol table that map symbols to their respective addresses."""
     pointer = ENTRYPOINT
-    table = dict()
+    symbol_table = dict()
     for _, (symbol, block) in enumerate(ast.items()):
-        table[symbol] = pointer
+        symbol_table[symbol] = pointer
         pointer += _get_block_size(block)
-    return table
+    return symbol_table
 
 def _get_block_size(block):
     """Compute the byte size of a code block."""
-    return sum((get_instruction_size(i[2]) for i in block))
+    return sum((get_instruction_size(i[1], i[2]) for i in block))
 
-def _resolve_symbols(ast, table):
+def _resolve_symbols(ast, symbol_table):
     """Go over the syntax tree, and try to resolve all values of
        type 'symbol' into actual addresses."""
     for _, (symbol, block) in enumerate(ast.items()):
         for instruction in block:
             for i, (t, symbol) in enumerate(instruction[3]):
                 if t == 'symbol':
-                    if symbol not in table:
+                    if symbol not in symbol_table:
                         raise UnresolvedSymbolError(symbol)
-                    instruction[3][i] = ('address', table[symbol])
+                    instruction[3][i] = ('address', symbol_table[symbol])
 
 def _turn_instructions_into_bytecode(ast):
     bytecode = []
