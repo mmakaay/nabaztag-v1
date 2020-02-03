@@ -1,26 +1,26 @@
 # Subroutine: @DivMod()
 #
 # Input:
-#   R0: the number to compute the div and mod for
+#   R0: the value to compute the div and mod for
 #   R1: the divider to use
 # Output:
 #   R0: the resulting div value
 #   R1: the resulting mod value
 #
-# E.g. given input R0 = 38, R1 = 17, then result R0 = 2, R1 = 4.
+# E.g. input R0=38, R1=17, output R0=2, R1=4 (because 2*17 + 4 = 38).
 
-@DivMod()
-    PUSH 0x00, 0x00011111
+@Math.DivMod()
+    PUSH 0, 0b00001100
 
-    LD R2, L0        # R2 = R0 (copy value)
-    LD R3, L1        # R3 = R1 (copy divider)
-    DIV R2, R3       # R2 = R2 // R3 (compute DIV)
-    LD R3, L2        # R3 = R2 (copy DIV)
-    MUL R3, R1       # R3 = R3 (DIV) * R1 (divider)
-    SUB R0, R3       # R0 = R0 (value) - R3 (compute MOD)
+    LD R2, L0        # R2 = R0 -> copy value
+    LD R3, L1        # R3 = R1 -> copy divider
+    DIV R2, R3       # R2 = R2 (copy value) // R3 (copy divider) -> compute DIV
+    LD R3, L2        # R3 = R2 -> copy DIV
+    MUL R3, R1       # R3 = R3 (DIV) * R1 (divider) -> compute value covered by DIV
+    SUB R0, R3       # R0 = R0 (value) - R3 (value covered by DIV) -> compute MOD
 
-    LD R1, R0        # R1 = R0 (copy MOD)
-    LD R0, R2        # R0 = R2 (copy DIV)
+    LD R1, R0        # R1 = R0 -> copy MOD
+    LD R0, R2        # R0 = R2 -> copy DIV
 
-    PULL 0x00, 0xff
+    PULL 0, 0b00001100
     RTS
