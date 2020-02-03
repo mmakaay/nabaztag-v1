@@ -14,9 +14,9 @@ include core/constants
 #              \        |       /
 #               \   04 03 02   /<.
 #                05          01    `.  encoder gap
-#              06              ..    .
-#             07                ..    .
-#    front -- 08        o       .. -- + back
+#              06             (20)   .
+#             07               (19)   .
+#    front -- 08        o      (18) -- + back
 #             09                17
 #              10              16
 #                11          15
@@ -155,7 +155,14 @@ define $sync_check   R12
     BRA @restart_if_not_yet_synced
 
 @done
-    STR $l_old, *LEFT_EAR_START   # Store the motor encoder positions of the
-    STR $r_old, *RIGHT_EAR_START  # two ears in RAM memory
+    # Store the ear state data in the RAM.
+    LD $direction, 0
+    STR $l_old, *LEFT_EAR_START
+    STR $l_old, *LEFT_EAR_TARGET
+    STR $direction, *LEFT_EAR_DIRECTION
+    STR $r_old, *RIGHT_EAR_START
+    STR $r_old, *RIGHT_EAR_TARGET
+    STR $direction, *RIGHT_EAR_DIRECTION
+
     PULL 0xff, 0xff               # Restore all registers
     RTS                           # Return to the caller

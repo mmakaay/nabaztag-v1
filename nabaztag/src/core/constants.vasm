@@ -1,6 +1,10 @@
-# I chose to define constants using a percent prefix and RAM memory
-# positions using the asterisk prefix. Note that this is nothing magical,
-# it's just my convention to easily recognize these in the code.
+# The following conventions are used for naming constants:
+# 
+#   *NAME : a RAM memory pointer
+#   %NAME : all other constants
+#
+# Note that these conventions are not magical at all. They are just
+# a means of making it easy to recognize their use in the codebase.
 
 # LED numbers.
 define %LED_BOTTOM      0
@@ -46,10 +50,16 @@ define %REVERSE         2
 # RAM address pointers
 # ----------------------------------------------------------------------
 #
-# # When using the core library, make use of RAM addresses that are
-# beyond these reserved addresses to prevent conflicts.
+# When using the core library, make use of RAM addresses that are
+# beyond these reserved addresses to prevent conflicts. Don't use a
+# high starting point though, since the top of the RAM is used
+# for the virtual machine stack.
 
-# Motor encoder values at which the ears are in their starting position.
-define *LEFT_EAR_START   0
-define *RIGHT_EAR_START  1
+define *LEFT_EAR_START      0  # Ear starting position after sync (1 -17)
+define *LEFT_EAR_DIRECTION  1  # Direction in which the ear is moved
+define *LEFT_EAR_TARGET     2  # Position to move the ear to (1 - 20)
+
+define *RIGHT_EAR_START     3  # Same for the right ear
+define *RIGHT_EAR_DIRECTION 4
+define *RIGHT_EAR_TARGET    5
 

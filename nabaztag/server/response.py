@@ -25,12 +25,16 @@ class Response():
             response += o.build()
         response += OPERATION_END
 
-        # Temp disabled, I need to find out if this is related to the music
-        # files as well, or only the program bytecode (I suspect the latter).
+        # TODO: I need to find out if this is related to the music
+        # files as well, or only the program bytecode. I suspect the latter,
+        # because the original Java compiler allows audio files of about
+        # 300KB in the message (the max for a VOX file, according to the
+        # specs).
         #if len(response) > MAX_RESPONSE_SIZE:
         #    raise ProgramTooLargeError(len(response), MAX_RESPONSE_SIZE)
 
         return response
+
 
 class SourcesModification():
     def __init__(self):

@@ -1,5 +1,5 @@
 import re
-import os.path
+from os.path import abspath, dirname, join as pathjoin, exists as pathexists
 from random import randint
 from collections import OrderedDict
 from nabaztag.exceptions import \
@@ -27,10 +27,10 @@ class Preprocessor():
     def _init_search_path(self):
         """Setup the default search path: source file path +
            the path to the package-provided source files."""
-        get_dir = lambda p: os.path.dirname(os.path.abspath(p))
+        get_dir = lambda p: dirname(abspath(p))
         self.include_path = [
             get_dir(self.src_path),
-            os.path.join(get_dir(__file__), 'includes')
+            abspath(pathjoin(get_dir(__file__), '../src'))
         ]
 
     def with_include_path(self, include_path):
@@ -81,8 +81,8 @@ class Preprocessor():
 
     def _find_file_in_include_path(self, name):
         for path in self.include_path:
-            path = os.path.join(path, name)
-            if os.path.exists(path):
+            path = pathjoin(path, name)
+            if pathexists(path):
                 return path
         return None
 

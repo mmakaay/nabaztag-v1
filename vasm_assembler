@@ -6,7 +6,7 @@ from nabaztag.exceptions import NabaztagException
 from nabaztag.vasm.preprocessing import Preprocessor
 from nabaztag.vasm.parsing import parse
 from nabaztag.vasm.bytecoding import ast_to_bytecode
-from nabaztag.response import Response, BytecodeFrame
+from nabaztag.server.response import Response, BytecodeFrame
 
 if len(sys.argv) != 2:
     print("Usage: %s <vasm file path>" % sys.argv[0])
