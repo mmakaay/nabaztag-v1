@@ -1,4 +1,4 @@
-@TurnSoundOff()
+@Sound.Off()
     MIDISTOP
     WAVSTOP
     WAIT 1

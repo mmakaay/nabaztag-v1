@@ -1,4 +1,4 @@
-include leds
+include core/leds/off
 
 music_file TARDIS midi/doctorwho.mid
 
@@ -6,7 +6,7 @@ define $vol  R0
 define $file R0
 
 @Main
-    BSR @TurnAllLedsOff()
+    BSR @Leds.Off()
 
     # Set volume
     LD $vol 255

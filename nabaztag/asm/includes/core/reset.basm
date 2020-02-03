@@ -1,0 +1,10 @@
+include core/sound/off
+include core/leds/off
+include core/ears/off
+include core/ears/sync
+
+@Reset()
+    BSR @Sound.Off()
+    BSR @Leds.Off()
+    BSR @Ears.Sync()
+    RTS

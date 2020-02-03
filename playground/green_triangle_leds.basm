@@ -1,4 +1,4 @@
-include leds
+include core/leds/off
 
 define $color      R0
 define $brightness R1
@@ -12,7 +12,7 @@ define $offtime    R6
 
 
 @Main
-    BSR @TurnAllLedsOff()
+    BSR @Leds.Off()
     LD $time, 20
     LD $ontime, 0 
     LD $offtime, 10

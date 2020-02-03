@@ -1,0 +1,6 @@
+include core/reset
+include core/idle
+
+@Main
+  BSR @Reset()
+  BRA @Idle

@@ -1,0 +1,55 @@
+# I chose to define constants using a percent prefix and RAM memory
+# positions using the asterisk prefix. Note that this is nothing magical,
+# it's just my convention to easily recognize these in the code.
+
+# LED numbers.
+define %LED_BOTTOM      0
+define %LED_LEFT        1
+define %LED_MIDDLE      2
+define %LED_RIGHT       3
+define %LED_NOSE        4
+
+# Colors that can be used with the PALETTE opcode.
+define %OFF             0
+define %RED             1
+define %GREEN           2
+define %YELLOW          3
+define %BLUE            4
+define %PURPLE          5
+define %CYAN            6
+define %WHITE           7
+define %GREY            8
+define %LIGHTRED        9
+define %LIGHTGREEN      10
+define %LIGHTYELLOW     11
+define %LIGHTBLUE       12
+define %LIGHTPURPLE     13
+define %LIGHTCYAN       14
+define %ORANGE          15
+
+# Motor numbers.
+define %MOTOR_RIGHT     0
+define %MOTOR_LEFT      1
+
+# Motor directions.
+define %MOTOR_STOP      0
+define %MOTOR_FORWARD   1
+define %MOTOR_REVERSE   2
+
+# Ear positions.
+define %EAR_UP          3
+define %EAR_FORWARD     8
+define %EAR_DOWN        13
+define %EAR_BACKWARD    18
+
+# ----------------------------------------------------------------------
+# RAM address pointers
+# ----------------------------------------------------------------------
+#
+# # When using the core library, make use of RAM addresses that are
+# beyond these reserved addresses to prevent conflicts.
+
+# Motor encoder values at which the ears are in their starting position.
+define *LEFT_EAR_START   0
+define *RIGHT_EAR_START  1
+

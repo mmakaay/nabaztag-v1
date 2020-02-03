@@ -1,0 +1,3 @@
+@Idle
+    WAIT 10
+    BRA @Idle

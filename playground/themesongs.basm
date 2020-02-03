@@ -1,5 +1,6 @@
-include leds
-include sound
+include core/leds/off
+include core/leds/twinkle
+include core/sound/off
 
 # TODO use interrupt on button to move to next midi
 # Current version doesn't work well
@@ -26,7 +27,7 @@ define $status       R2
     MIDIPLAY $midi_file
 
 @wait_for_end_of_midi
-    BSR @TwinkleLeds()
+    BSR @Leds.Twinkle()
 
     PUSHBUTTON $status
     TST $status
@@ -37,16 +38,16 @@ define $status       R2
     BNE @wait_for_end_of_midi
 
 @wait_for_buttonpress_to_play_next_midi
-    BSR @TurnSoundOff()
-    BSR @TurnAllLedsOff()
+    BSR @Sound.Off()
+    BSR @Leds.Off()
     WAIT 1
     PUSHBUTTON $status
     TST $status
     BEQ @wait_for_buttonpress_to_play_next_midi
 
 @select_next_midi
-    BSR @TurnSoundOff()
-    BSR @TurnAllLedsOff()
+    BSR @Sound.Off()
+    BSR @Leds.Off()
     INC $midi_file
     CMP $midi_file $max_midi
     BLE @play_midi

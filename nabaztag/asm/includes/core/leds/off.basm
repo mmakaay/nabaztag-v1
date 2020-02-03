@@ -1,0 +1,27 @@
+include core/constants
+
+define $r R0
+define $g R1
+define $b R2
+define $led R3
+define $transition R5
+
+@Leds.Off()
+    PUSH 0b00000000, 0b00101111
+    CLR $r
+    CLR $g
+    CLR $b
+    LD $transition 5
+    LD $led, %LED_BOTTOM
+    LED $led, $transition
+    LD $led, %LED_LEFT
+    LED $led, $transition
+    LD $led, %LED_MIDDLE
+    LED $led, $transition
+    LD $led, %LED_RIGHT
+    LED $led, $transition
+    LD $led, %LED_NOSE
+    LED $led, $transition
+    PULL 0b00000000, 0b00101111
+    WAIT 1
+    RTS

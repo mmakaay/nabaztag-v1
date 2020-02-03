@@ -1,4 +1,4 @@
-include base
+include core/sound/off
 
 music_file V1 audio/music_0.vox
 music_file V2 audio/music_1.vox
@@ -7,7 +7,7 @@ define $vol      R0
 define $wav_file R0
 
 @Main
-    BSR @TurnSoundOff()
+    BSR @Sound.Off()
 
     LD $vol, 255
     MVOL $vol

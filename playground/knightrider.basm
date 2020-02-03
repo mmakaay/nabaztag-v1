@@ -1,4 +1,4 @@
-include leds
+include core/leds/off
 
 music_file KITT midi/knightrider.mid
 
@@ -12,7 +12,7 @@ define $status R5
 
 
 @Main
-    BSR @TurnAllLedsOff()
+    BSR @Leds.Off()
 
     # Set volume
     LD $vol 255
@@ -78,7 +78,7 @@ define $status R5
     MUSIC R0
     TST R0
     BNE @wait_for_end_of_midi
-    BSR @TurnAllLedsOff()
+    BSR @Leds.Off()
 
 @end
     WAIT 10

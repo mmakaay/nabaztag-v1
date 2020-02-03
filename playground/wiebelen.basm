@@ -1,5 +1,5 @@
-include base
-include leds
+include core/leds/off
+include core/leds/twinkle
 
 music_file HUPPEL audio/wiebelen.vox
 
@@ -50,11 +50,11 @@ music_file HUPPEL audio/wiebelen.vox
     WAVPLAY R0
 
 @wait_for_end_of_music
-    BSR @TwinkleLeds()
+    BSR @Leds.Twinkle()
     MUSIC R0
     TST R0
     BNE @wait_for_end_of_music
-    BSR @TurnAllLedsOff()
+    BSR @Leds.Off()
 
 @end
     WAIT 10

@@ -90,7 +90,3 @@ music_file DING midi/ding.mid
     LD R0, 15
     INPUT R0, @interrupt_timer
     BRA @interrupt_loop
-
-
-
-

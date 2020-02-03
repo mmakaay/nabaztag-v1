@@ -1,8 +1,8 @@
-include base
-include ears
+include core/reset
+include core/leds/twinkle
 
 @Main
     BSR @Reset()
 @loop
-    BSR @TwinkleLeds()
+    BSR @Leds.Twinkle()
     BRA @loop

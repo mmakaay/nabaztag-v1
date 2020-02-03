@@ -1,0 +1,25 @@
+include core/constants
+
+define $r R0
+define $g R1
+define $b R2
+define $led R3
+define $led_max R4
+define $transition R5
+
+@Leds.Twinkle()
+    PUSH 0b0000000, 0b00111111
+    CLR $led
+    LD $led_max %LED_NOSE
+    LD $transition 5
+@twinkle_next_led
+    RND $r                       # Select a random RGB color
+    RND $g
+    RND $b
+    LED $led, $transition        # Set the LED to the random color
+    INC $led                     # And do so for all available LEDs
+    CMP $led $led_max
+    BLE @twinkle_next_led
+    WAIT $transition             # Wait for the leds to update
+    PULL 0b0000000, 0b00111111
+    RTS

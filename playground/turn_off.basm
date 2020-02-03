@@ -1,0 +1,6 @@
+include core/turn_off
+include core/idle
+
+@Main
+  BSR @TurnOff()
+  BRA @Idle
