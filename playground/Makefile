@@ -1,10 +1,10 @@
-SOURCES := $(wildcard *.basm)
-OUTPUTS := $(patsubst %.basm,%.bin,$(SOURCES)) 
+SOURCES := $(wildcard *.vasm)
+OUTPUTS := $(patsubst %.vasm,%.bin,$(SOURCES)) 
 
 all: $(OUTPUTS) 
 
-%.bin: %.basm
-	../basm_assembler $<
+%.bin: %.vasm
+	../vasm_assembler $<
 
 clean:
 	rm -f $(OUTPUTS)

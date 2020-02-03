@@ -27,20 +27,20 @@ define %LIGHTPURPLE     13
 define %LIGHTCYAN       14
 define %ORANGE          15
 
-# Motor numbers.
-define %MOTOR_RIGHT     0
-define %MOTOR_LEFT      1
-
-# Motor directions.
-define %MOTOR_STOP      0
-define %MOTOR_FORWARD   1
-define %MOTOR_REVERSE   2
-
 # Ear positions.
 define %EAR_UP          3
 define %EAR_FORWARD     8
 define %EAR_DOWN        13
 define %EAR_BACKWARD    18
+
+# Motor numbers.
+define %MOTOR_RIGHT     0
+define %MOTOR_LEFT      1
+
+# Motor directions.
+define %STOP            0
+define %FORWARD         1
+define %REVERSE         2
 
 # ----------------------------------------------------------------------
 # RAM address pointers

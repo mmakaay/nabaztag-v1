@@ -1,5 +1,5 @@
 from nabaztag.exceptions import UnresolvedSymbolError, AsmEmptyError
-from nabaztag.asm.opcodes import \
+from nabaztag.vasm.opcodes import \
         parse_instruction, get_instruction_size, instruction_to_bytecode
 
 

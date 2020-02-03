@@ -16,7 +16,7 @@ MUSICFILE = re.compile('^music_file (\S+) (.+)$')
 LOCAL_SYMBOL = re.compile('^@(?!__local_)[^a-z0-9A-Z]*[a-z0-9]\S*$')
 SPLITTER = re.compile('(?:\s*,\s*|\s+)')
 MUSIC_FILE_REF = re.compile('^music_file:(\S+)$')
-EXTENSION = ".basm"
+EXTENSION = ".vasm"
 
 class Preprocessor():
     def __init__(self, src_path):

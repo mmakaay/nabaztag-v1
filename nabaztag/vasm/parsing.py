@@ -1,7 +1,7 @@
 import re
 from collections import OrderedDict
 from nabaztag.exceptions import NabaztagException, AsmSyntaxError
-from nabaztag.asm.opcodes import parse_instruction
+from nabaztag.vasm.opcodes import parse_instruction
 
 
 SYMBOL = re.compile('^(@\S*)\s*$')

@@ -75,12 +75,12 @@ define $sync_check   R12
     LD $left,%MOTOR_LEFT          # Left motor number
     LD $right, %MOTOR_RIGHT       # Right motor number
 
-    LD $direction, %MOTOR_REVERSE # First, start both motors in reverse for a
+    LD $direction, %REVERSE       # First, start both motors in reverse for a
     MOTOR $left, $direction       # little while. When the ears were synced
     MOTOR $right, $direction      # before, this will bring them right in front
     WAIT 30                       # of the gap, making the sync operation fast
 
-    LD $direction, %MOTOR_FORWARD # Now start both motors to make the ears
+    LD $direction, %FORWARD       # Now start both motors to make the ears
     MOTOR $left, $direction       # turn in the forward direction
     MOTOR $right, $direction
 
@@ -136,7 +136,7 @@ define $sync_check   R12
     BRA @sync_right               # and continue with the sync process
 
 @stop_sync_left
-    LD $direction, %MOTOR_STOP    # Stop the left motor
+    LD $direction, %STOP          # Stop the left motor
     MOTOR $left, $direction
     AND $sync_state, 0x01         # Flag this one as synced
     BRA @sync_right               # and continue with the sync process
@@ -149,7 +149,7 @@ define $sync_check   R12
     BRA @sync_loop
 
 @stop_sync_right
-    LD $direction, %MOTOR_STOP
+    LD $direction, %STOP
     MOTOR $right, $direction
     AND $sync_state, 0x10
     BRA @restart_if_not_yet_synced

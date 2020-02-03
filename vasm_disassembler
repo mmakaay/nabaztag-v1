@@ -3,7 +3,7 @@
 import sys
 import os
 
-from nabaztag.asm.opcodes import bytecode_to_instruction, format_operand
+from nabaztag.vasm.opcodes import bytecode_to_instruction, format_operand
 
 if len(sys.argv) != 2:
     print("Usage: %s <code file path>" % sys.argv[0])

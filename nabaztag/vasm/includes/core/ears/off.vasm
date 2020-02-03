@@ -5,7 +5,7 @@ define $direction R1
 
 @Ears.Off()
     PUSH 0x00000000, 0x00000011
-    LD $direction, %MOTOR_STOP
+    LD $direction, %STOP
     LD $motor, %MOTOR_LEFT 
     MOTOR $motor, $direction
     LD $motor, %MOTOR_RIGHT 
