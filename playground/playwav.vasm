@@ -1,22 +1,21 @@
-include core/sound/off
+import core/idle
+import core/sound/off
 
 music_file V1 audio/music_0.vox
 music_file V2 audio/music_1.vox
 
-define $vol      R0
-define $wav_file R0
+$vol      equ R0
+$wav_file equ R0
 
 @Main
-    BSR @Sound.Off()
+    bsr @Core.Sound.Off()
 
-    LD $vol, 255
-    MVOL $vol
-    LD $vol, 150
-    VOL $vol
+    ld $vol 255
+    mvol $vol
+    ld $vol 150
+    vol $vol
 
-    LD $wav_file, music_file:V1
-    WAVPLAY $wav_file
+    ld $wav_file music_file:V1
+    wavplay $wav_file
 
-@end
-    WAIT 20
-    BRA @end
+    bra @Core.Idle

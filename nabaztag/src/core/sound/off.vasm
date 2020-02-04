@@ -1,5 +1,5 @@
-@Sound.Off()
-    MIDISTOP
-    WAVSTOP
-    WAIT 1
-    RTS
+@Core.Sound.Off()
+    midistop
+    wavstop
+    wait 1
+    rts

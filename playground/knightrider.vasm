@@ -1,85 +1,85 @@
-include core/leds/off
+import core/idle
+import core/leds/off
+import core/sound/off
 
 music_file KITT midi/knightrider.mid
 
-define $vol    R0
-define $r      R0
-define $g      R1
-define $b      R2
-define $led    R3
-define $time   R4
-define $status R5
-
+$vol    EQU R0
+$r      EQU R0
+$g      EQU R1
+$b      EQU R2
+$led    EQU R3
+$time   EQU R4
+$status EQU R5
 
 @Main
-    BSR @Leds.Off()
+    bsr @Core.Leds.Off()
 
     # Set volume
-    LD $vol 255
-    MVOL $vol
-    LD $vol 150
-    VOL $vol
+    ld $vol 150
+    mvol $vol
+    ld $vol 150
+    vol $vol
 
     # LED settings
-    LD $r 0
-    LD $g 0
-    LD $b 0
-    LD $time 5
+    ld $r 0
+    ld $g 0
+    ld $b 0
+    ld $time 5
 
     # Start MIDI playback
-    LD R0, music_file:KITT
-    MIDIPLAY R0
+    ld R0 music_file:KITT
+    midiplay R0
 
 @wait_for_end_of_midi
-    LD $r, 0
-    LD $led %LED_MIDDLE
-    LD $time, 5
-    LED $led, $time
+    ld $r 0
+    ld $led %LED_MIDDLE
+    ld $time 5
+    led $led $time
 
-    LD $led %LED_LEFT
-    LD $r, 255
-    LD $time, 5
-    LED $led, $time
-    WAIT 5
+    ld $led %LED_LEFT
+    ld $r 255
+    ld $time 5
+    led $led $time
+    wait 5
 
-    LD $r, 0
-    LD $led %LED_LEFT
-    LD $time, 10
-    LED $led, $time
+    ld $r 0
+    ld $led %LED_LEFT
+    ld $time 10
+    led $led $time
 
-    LD $led %LED_MIDDLE
-    LD $r, 255
-    LD $time, 5
-    LED $led, $time
-    WAIT 5
+    ld $led %LED_MIDDLE
+    ld $r 255
+    ld $time 5
+    led $led $time
+    wait 5
 
-    LD $r, 0
-    LD $led %LED_MIDDLE
-    LD $time, 5
-    LED $led, $time
+    ld $r 0
+    ld $led %LED_MIDDLE
+    ld $time 5
+    led $led $time
 
-    LD $led %LED_RIGHT
-    LD $r, 255
-    LD $time, 5
-    LED $led, $time
-    WAIT 5
+    ld $led %LED_RIGHT
+    ld $r 255
+    ld $time 5
+    led $led $time
+    wait 5
 
-    LD $r, 0
-    LD $led %LED_RIGHT
-    LD $time, 10
-    LED $led, $time
+    ld $r 0
+    ld $led %LED_RIGHT
+    ld $time 10
+    led $led $time
 
-    LD $led %LED_MIDDLE
-    LD $r, 255
-    LD $time, 5
-    LED $led, $time
-    WAIT 5
+    ld $led %LED_MIDDLE
+    ld $r 255
+    ld $time 5
+    led $led $time
+    wait 5
 
-    MUSIC R0
-    TST R0
-    BNE @wait_for_end_of_midi
-    BSR @Leds.Off()
+    music R0
+    tst R0
+    bne @wait_for_end_of_midi
 
-@end
-    WAIT 10
-    BRA @end
+    bsr @Core.Leds.Off()
+    bsr @Core.Sound.Off()
+    bra @Core.Idle

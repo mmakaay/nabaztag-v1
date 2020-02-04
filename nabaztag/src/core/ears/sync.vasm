@@ -1,4 +1,5 @@
-include core/constants
+import core/constants
+import core/ears/ram
 
 # (See also doc/ears.md)
 # The ears are moved by two motors.
@@ -35,117 +36,118 @@ include core/constants
 # since that would be less dependent on the exact code structure. For
 # now, this method seems just fine.
 
-define $left         R0
-define $l_new        R1
-define $l_old        R2
-define $l_gap_size   R3
-define $right        R4
-define $r_new        R5
-define $r_old        R6
-define $r_gap_size   R7
-define $direction    R8
-define $threshold    R9
-define $too_much     R10
-define $sync_state   R11
-define $sync_check   R12
+$left       equ R0
+$l_new      equ R1
+$l_old      equ R2
+$l_gap_size equ R3
+$right      equ R4
+$r_new      equ R5
+$r_old      equ R6
+$r_gap_size equ R7
+$direction  equ R8
+$threshold  equ R9
+$too_much   equ R10
+$sync_state equ R11
+$sync_check equ R12
 
-@Ears.Sync()
-    PUSH 0xff, 0xff               # Allows me to fiddle with all registers
+@Core.Ears.Sync()
+    push all                     # Allows me to fiddle with all registers
 
-    LD $threshold, 9              # Gap detection threshold, see above
-    LD $too_much, 50              # If counter exceeds this, ear might be stuck
-    LD $sync_state 0x11           # To keep track if both ears are synced
-    LD $left,%MOTOR_LEFT          # Left motor number
-    LD $right, %MOTOR_RIGHT       # Right motor number
+    ld $threshold 9              # Gap detection threshold, see above
+    ld $too_much 50              # If counter exceeds this, ear might be stuck
+    ld $sync_state 0x11          # To keep track if both ears are synced
+    ld $left %MOTOR_LEFT         # Left motor number
+    ld $right %MOTOR_RIGHT       # Right motor number
 
-    LD $direction, %REVERSE       # First, start both motors in reverse for a
-    MOTOR $left, $direction       # little while. When the ears were synced
-    MOTOR $right, $direction      # before, this will bring them right in front
-    WAIT 30                       # of the gap, making the sync operation fast
+    ld $direction %REVERSE       # First, start both motors in reverse for a
+    motor $left $direction       # little while. When the ears were synced
+    motor $right $direction      # before, this will bring them right in front
+    wait 30                      # of the gap, making the sync operation fast
 
-    LD $direction, %FORWARD       # Now start both motors to make the ears
-    MOTOR $left, $direction       # turn in the forward direction
-    MOTOR $right, $direction
+    ld $direction %FORWARD       # Now start both motors to make the ears
+    motor $left $direction       # turn in the forward direction
+    motor $right $direction
 
-    MOTORGET $l_new, $left        # Get the encoder value for the left motor
-    LD $l_old, $l_new             # Copy the value to the old value register
-    CLR $l_gap_size               # Clear the gap size counter
+    motorget $l_new $left        # Get the encoder value for the left motor
+    ld $l_old $l_new             # Copy the value to the old value register
+    clr $l_gap_size              # Clear the gap size counter
 
-    MOTORGET $r_new, $right       # Do the same for the right ear
-    LD $r_old, $r_new
-    CLR $r_gap_size
+    motorget $r_new $right       # Do the same for the right ear
+    ld $r_old $r_new
+    clr $r_gap_size
 
 @sync_loop
-    WAIT 1                        # required to update the motor encoders
+    wait 1                       # required to update the motor encoders
 
 @sync_left
-    LD $sync_check, $sync_state   # Check if syncing has already been completed
-    AND $sync_check, 0x10
-    TST $sync_check
-    BEQ @sync_right
+    ld $sync_check $sync_state   # Check if syncing has already been completed
+    and $sync_check 0x10
+    tst $sync_check
+    beq @sync_right
 
-    MOTORGET $l_new, $left        # Get new left motor encoder value
-    CMP $l_old, $l_new            # Compare to the known value
-    BNE @check_for_gap_left       # If it changed, check if we're at the gap
-    INC $l_gap_size               # If not, then increment the gap size counter
+    motorget $l_new $left         # Get new left motor encoder value
+    cmp $l_old $l_new             # Compare to the known value
+    bne @check_for_gap_left       # If it changed, check if we're at the gap
+    inc $l_gap_size               # If not, then increment the gap size counter
 
-    CMP $l_gap_size, $too_much    # Compare to the 'too much' threshold
-    BGE @stop_sync_left           # Stop syncing ear if it seems stuck
+    cmp $l_gap_size $too_much     # Compare to the 'too much' threshold
+    bge @stop_sync_left           # Stop syncing ear if it seems stuck
 
 @sync_right
-    LD $sync_check, $sync_state   # Do the same for the right motor.
-    AND $sync_check, 0x01
-    TST $sync_check
-    BEQ @restart_if_not_yet_synced
+    ld $sync_check $sync_state    # Do the same for the right motor.
+    and $sync_check 0x01
+    tst $sync_check
+    beq @restart_if_not_yet_synced
 
-    MOTORGET $r_new, $right
-    CMP $r_old, $r_new
-    BNE @check_for_gap_right
-    INC $r_gap_size
+    motorget $r_new $right
+    cmp $r_old $r_new
+    bne @check_for_gap_right
+    inc $r_gap_size
 
-    CMP $r_gap_size, $too_much
-    BGE @stop_sync_right
+    cmp $r_gap_size $too_much
+    bge @stop_sync_right
 
 @restart_if_not_yet_synced
-    TST $sync_state               # If there are still sync bits active
-    BNE @sync_loop                # then restart the sync loop
-    BRA @done
+    tst $sync_state               # If there are still sync bits active
+    bne @sync_loop                # then restart the sync loop
+    bra @done
 
 @check_for_gap_left
-    LD $l_old, $l_new             # Keep track of the new encoder value
-    CMP $l_gap_size, $threshold   # If the gap size exceeds the threshold
-    BGT @stop_sync_left           # then we found the gap, the ear is in sync!
-    CLR $l_gap_size               # Otherwise this was a normal tick, clear it
-    BRA @sync_right               # and continue with the sync process
+    ld $l_old $l_new              # Keep track of the new encoder value
+    cmp $l_gap_size $threshold    # If the gap size exceeds the threshold
+    bgt @stop_sync_left           # then we found the gap, the ear is in sync!
+    clr $l_gap_size               # Otherwise this was a normal tick, clear it
+    bra @sync_right               # and continue with the sync process
 
 @stop_sync_left
-    LD $direction, %STOP          # Stop the left motor
-    MOTOR $left, $direction
-    AND $sync_state, 0x01         # Flag this one as synced
-    BRA @sync_right               # and continue with the sync process
+    ld $direction %STOP           # Stop the left motor
+    motor $left $direction
+    and $sync_state 0x01          # Flag this one as synced
+    bra @sync_right               # and continue with the sync process
 
 @check_for_gap_right
-    LD $r_old, $r_new             # Do the same for the right ear
-    CMP $r_gap_size, $threshold
-    BGT @stop_sync_right
-    CLR $r_gap_size
-    BRA @sync_loop
+    ld $r_old $r_new              # Do the same for the right ear
+    cmp $r_gap_size $threshold
+    bgt @stop_sync_right
+    clr $r_gap_size
+    bra @sync_loop
 
 @stop_sync_right
-    LD $direction, %STOP
-    MOTOR $right, $direction
-    AND $sync_state, 0x10
-    BRA @restart_if_not_yet_synced
+    ld $direction %STOP
+    motor $right $direction
+    and $sync_state 0x10
+    bra @restart_if_not_yet_synced
 
 @done
-    # Store the ear state data in the RAM.
-    LD $direction, 0
-    STR $l_old, *LEFT_EAR_START
-    STR $l_old, *LEFT_EAR_TARGET
-    STR $direction, *LEFT_EAR_DIRECTION
-    STR $r_old, *RIGHT_EAR_START
-    STR $r_old, *RIGHT_EAR_TARGET
-    STR $direction, *RIGHT_EAR_DIRECTION
+    ld $direction 0
 
-    PULL 0xff, 0xff               # Restore all registers
-    RTS                           # Return to the caller
+    str $l_old *LEFT_EAR_START     # Store left ear state in RAM
+    str $l_old *LEFT_EAR_TARGET
+    str $direction *LEFT_EAR_MOTOR
+
+    str $r_old *RIGHT_EAR_START    # Store right ear state in RAM
+    str $r_old *RIGHT_EAR_TARGET
+    str $direction *RIGHT_EAR_MOTOR
+
+    pull last
+    rts

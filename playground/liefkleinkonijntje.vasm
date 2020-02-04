@@ -1,24 +1,23 @@
-include core/leds/off
-include core/leds/twinkle
+import core/idle
+import core/leds/off
+import core/leds/twinkle
 
 music_file LIEF midi/liefkleinkonijntje.mid
 
 @Main
-    LD R0 255
-    MVOL R0
-    LD R0 150
-    VOL R0
+    ld R0 255
+    mvol R0
+    ld R0 150
+    vol R0
 
-    LD R0, music_file:LIEF
-    MIDIPLAY R0
+    ld R0 music_file:LIEF
+    midiplay R0
 
 @wait_for_end_of_midi
-    BSR @Leds.Twinkle()
-    MUSIC R0
-    TST R0
-    BNE @wait_for_end_of_midi
-    BSR @Leds.Off()
+    bsr @Core.Leds.Twinkle()
+    music R0
+    tst R0
+    bne @wait_for_end_of_midi
+    bsr @Core.Leds.Off()
 
-@end
-    WAIT 10
-    BRA @end
+    bra @Core.Idle

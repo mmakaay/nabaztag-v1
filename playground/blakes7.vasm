@@ -1,23 +1,23 @@
-include core/leds/off
+import core/leds/off
 
 music_file BLAKES7 midi/blakes7.mid
 
-define $vol  R0
-define $file R0
+$vol  equ R0
+$file equ R0
 
 @Main
-    BSR @Leds.Off()
+    bsr @Core.Leds.Off()
 
     # Set volume
-    LD $vol 255
-    MVOL $vol
-    LD $vol 150
-    VOL $vol
+    ld   $vol 255
+    mvol $vol
+    ld   $vol 150
+    vol  $vol
 
     # Start MIDI playback
-    LD $file, music_file:BLAKES7
-    MIDIPLAY $file
+    ld $file music_file:BLAKES7
+    midiplay $file
 
 @end
-    WAIT 10
-    BRA @end
+    wait 10
+    bra @end

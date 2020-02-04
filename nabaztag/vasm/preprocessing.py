@@ -9,14 +9,28 @@ from nabaztag.exceptions import \
 COMMENTS = re.compile('\s*#.*$')
 TRIMMABLE_WHITESPACE = re.compile('(^\s+|\s+$)')
 WHITESPACE = re.compile('\s+')
-DEFINE = re.compile('^define (\S+) (.+)$')
-INCLUDE = re.compile('^include (\S+)$')
+MACRO = re.compile('^(\S+) EQU (.+)$', flags=re.IGNORECASE)
 GLOBAL_MACRO = re.compile('^[^a-z0-9A-Z]*[A-Z]')
+IMPORT = re.compile('^IMPORT (\S+)$', flags=re.IGNORECASE)
+PUSHPULL = re.compile('^(PUSH|PULL) (.+)$', flags=re.IGNORECASE)
+RAM_RESERVATION = re.compile('^(\S+) RMB (.+)$', flags=re.IGNORECASE)
 MUSICFILE = re.compile('^music_file (\S+) (.+)$')
 LOCAL_SYMBOL = re.compile('^@(?!__local_)[^a-z0-9A-Z]*[a-z0-9]\S*$')
-SPLITTER = re.compile('(?:\s*,\s*|\s+)')
+SPLITTER = re.compile('\s+')
 MUSIC_FILE_REF = re.compile('^music_file:(\S+)$')
 EXTENSION = ".vasm"
+
+# Bitcodes for the use of registers with the PUSH and PULL opcodes.
+PUSHPULL_REGS = {
+    'CC' : 0b1000000000000000, 'R14': 0b0100000000000000,
+    'R13': 0b0010000000000000, 'R12': 0b0001000000000000,
+    'R11': 0b0000100000000000, 'R10': 0b0000010000000000,
+    'R9' : 0b0000001000000000, 'R8' : 0b0000000100000000,
+    'R7' : 0b0000000010000000, 'R6' : 0b0000000001000000,
+    'R5' : 0b0000000000100000, 'R4' : 0b0000000000010000,
+    'R3' : 0b0000000000001000, 'R2' : 0b0000000000000100,
+    'R1' : 0b0000000000000010, 'R0' : 0b0000000000000001
+}
 
 class Preprocessor():
     def __init__(self, src_path):
@@ -28,19 +42,19 @@ class Preprocessor():
         """Setup the default search path: source file path +
            the path to the package-provided source files."""
         get_dir = lambda p: dirname(abspath(p))
-        self.include_path = [
+        self.path = [
             get_dir(self.src_path),
             abspath(pathjoin(get_dir(__file__), '../src'))
         ]
 
-    def with_include_path(self, include_path):
-        """Add an extra path to the preprocessor's include paths, used for
-           finding files that are included from the source code (e.g. other
-           source files or audio files).
+    def with_path(self, path):
+        """Add an extra path to the preprocessor's paths, used for finding
+           files that are imported from the source code (e.g. other source
+           files or audio files).
            When adding a path, this one is added at the start of the
-           already established include path. Therefore files that can be
+           already established path. Therefore files that can be
            found in this path will take precedence."""
-        self.include_path.insert(0, include_path)
+        self.path.insert(0, path)
         return self
 
     def execute(self):
@@ -52,13 +66,14 @@ class Preprocessor():
     def _init_working_data(self):
         self.lines = []
         self.sources = []
+        self.ram_pointer = 0
         self.macros = Macros()
         self.music_files = dict()
         self.mangle_rand = "%04x" % randint(0x1000, 0xffff)
         self.mangle_id = 0
 
     def _load(self, path, from_frame=None):
-        full_path = self._find_file_in_include_path(path)
+        full_path = self._find_file_in_path(path)
         if full_path is None:
             location = "preprocessor" if not from_frame else from_frame.location
             raise AsmFileNotFound(self.src_path, location)
@@ -72,15 +87,17 @@ class Preprocessor():
                 frame.line_nr += 1
                 line = self._normalize_input(line)
                 self._handle_empty_line(frame, line) or \
-                self._handle_include(frame, line) or \
+                self._handle_import(frame, line) or \
                 self._handle_music_file(frame, line) or \
+                self._handle_ram_reservation(frame, line) or \
                 self._handle_define_macro(frame, line) or \
+                self._handle_push_or_pull_line(frame, line) or \
                 self._handle_other_line(frame, line)
         self._mangle_local_symbols()
         self._rewrite_music_file_labels()
 
-    def _find_file_in_include_path(self, name):
-        for path in self.include_path:
+    def _find_file_in_path(self, name):
+        for path in self.path:
             path = pathjoin(path, name)
             if pathexists(path):
                 return path
@@ -98,12 +115,12 @@ class Preprocessor():
     def _handle_empty_line(self, frame, line):
         return line == ""
 
-    def _handle_include(self, frame, line):
-        if not INCLUDE.match(line):
+    def _handle_import(self, frame, line):
+        if not IMPORT.match(line):
             return False
-        matches = INCLUDE.search(line)
+        matches = IMPORT.search(line)
         name = matches[1] + EXTENSION
-        full_path = self._find_file_in_include_path(name)
+        full_path = self._find_file_in_path(name)
         if full_path is None:
             raise AsmFileNotFound(name, frame.location)
         self._load(full_path, frame)
@@ -120,7 +137,7 @@ class Preprocessor():
         matches = MUSICFILE.search(line)
         label = matches[1]
         name = matches[2]
-        full_path = self._find_file_in_include_path(name)
+        full_path = self._find_file_in_path(name)
         if full_path is None:
             raise AsmMusicFileNotFound(label, name, frame.location)
         if label in self.music_files:
@@ -132,20 +149,77 @@ class Preprocessor():
         self.music_files[label] = (len(self.music_files), full_path, music_data)
         return True
 
-    def _handle_define_macro(self, frame, line):
-        """Two kinds of macros are supported: global and local.
-            Global macros are identified by the fact that the first letter
-            in the macro is upper case (e.g. "Lalala", "%MY_CONSTANT",
-            "123OK"). All other macros are local and will only be applied
-            within the context of the source file that is currently being
-            processed."""
-        if not DEFINE.match(line):
+    def _handle_ram_reservation(self, frame, line):
+        """The pseudo-opcode "<label> RMB <bytelen>" (reserve memory block)
+           can be used to reserve the requested number bytes in the RAM,
+           and to make the <label> point to the position of that reserved
+           space (0 - 255). The <label> can then be used with the STR and
+           LDR opcodes as the RAM offset value."""
+        match = RAM_RESERVATION.match(line)
+        if not match:
             return False
-        matches = DEFINE.search(line)
+
+        find = match[1]
+        replace = str(self.ram_pointer)
+
+        bytelen = int(match[2], 0)
+        self.ram_pointer += bytelen
+
+        macro_set = self.macros if GLOBAL_MACRO.match(find) else frame.macros
+        macro_set.add(find, replace)
+        return True
+
+    def _handle_define_macro(self, frame, line):
+        """The pseudo-opcode "<find> EQU <replace> (equate) can be used to
+           define a simple macro. Two kinds of macros are supported: global
+           and local. Global macros are identified by the fact that the first
+           letter in the macro is upper case (e.g. "Lalala", "%MY_CONSTANT",
+           "123OK"). All other macros are local and will only be applied
+           within the context of the source file that is currently being
+           processed."""
+        if not MACRO.match(line):
+            return False
+        matches = MACRO.search(line)
         find = matches[1]
         replace = matches[2]
         macro_set = self.macros if GLOBAL_MACRO.match(find) else frame.macros
         macro_set.add(find, replace)
+        return True
+
+    def _handle_push_or_pull_line(self, frame, line):
+        """The PUSH and PULL opcodes can be a bit tricky, since these
+           require a two byte input, based on a bitwise pattern that describes
+           the registers to push onto or pull from the stack. Here, additional
+           syntax is implemented to allow for the following forms:
+           PUSH/PULL ALL (equivalent to PUSH/PULL 255, 255),
+           PUSH/PULL <Reg1>, <Reg2>, .., <RegN> (regs being: CC, R0 .. R14),
+           PULL LAST (pulls the registers from the related PUSH)"""
+        if not PUSHPULL.match(line):
+            return False
+        opcode, *operands = SPLITTER.split(line.upper())
+
+        hi,lo = 0, 0
+        if len(operands) == 1 and operands[0] == 'LAST' and frame.pushes:
+            hi, lo = frame.pushes[-1]
+        elif len(operands) == 1 and operands[0] == 'ALL':
+            hi = 255
+            lo = 255
+        elif operands and all((o in PUSHPULL_REGS for o in operands)):
+            regs = 0
+            for o in operands:
+                regs = regs | PUSHPULL_REGS[o]
+            hi = regs >> 8
+            lo = regs & 255
+        else:
+            return False
+            
+        if opcode == 'PUSH':
+            frame.pushes.append((hi, lo))
+        elif frame.pushes:
+            frame.pushes.pop()
+
+        line = "%s %d %d" % (opcode, hi, lo)
+        self.lines.append((line, frame.source_nr, frame.line_nr))
         return True
 
     def _handle_other_line(self, frame, line):
@@ -178,7 +252,7 @@ class Preprocessor():
                     operands[j] = local_symbols[operand]
                     mangled = True
                 if mangled:
-                    rewrite = '%s %s' % (opcode, ', '.join(operands))
+                    rewrite = '%s %s' % (opcode, ' '.join(operands))
                     self.lines[i] = (rewrite, path, line_nr)
 
     def _rewrite_music_file_labels(self):
@@ -201,7 +275,7 @@ class Preprocessor():
                     operands[j] = str(self.music_files[label][0])
                     rewritten = True
                 if rewritten:
-                    rewrite = '%s %s' % (opcode, ', '.join(operands))
+                    rewrite = '%s %s' % (opcode, ' '.join(operands))
                     self.lines[i] = (rewrite, path, line_nr)
 
 
@@ -236,6 +310,7 @@ class StackFrame():
         self.source_nr = source_nr
         self.line_nr = 0
         self.macros = Macros()
+        self.pushes = []
 
     @property
     def location(self):

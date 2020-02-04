@@ -408,7 +408,7 @@ def _parse_operands(specs, opcode, operands):
 
 
 SYMBOLIC_ADDRESS = re.compile('^@(__local_|[a-zA-Z])\S*$')
-REGISTER = re.compile('^R(?:[0-9]|1[0-5])$')
+REGISTER = re.compile('^[Rr](?:[0-9]|1[0-5])$')
 
 def _try_parse_operand(expected_type, operand):
     try:

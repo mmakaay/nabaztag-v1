@@ -1,53 +1,52 @@
-include core/leds/off
+import core/leds/off
 
-define $color      R0
-define $brightness R1
-define $r          R0
-define $g          R1
-define $b          R2
-define $led        R3
-define $time       R4
-define $ontime     R5
-define $offtime    R6
-
+$color      EQU R0
+$brightness EQU R1
+$r          EQU R0
+$g          EQU R1
+$b          EQU R2
+$led        EQU R3
+$time       EQU R4
+$ontime     EQU R5
+$offtime    EQU R6
 
 @Main
-    BSR @Leds.Off()
-    LD $time, 20
-    LD $ontime, 0 
-    LD $offtime, 10
+    bsr @Core.Leds.Off()
+    ld $time 20
+    ld $ontime 0 
+    ld $offtime 10
 
 @loop
-    LD $led, %LED_RIGHT
-    BSR @turn_led_off
-    LD $led %LED_NOSE 
-    BSR @turn_led_on
-    WAIT $time
+    ld $led %LED_RIGHT
+    bsr @turn_led_off
+    ld $led %LED_NOSE 
+    bsr @turn_led_on
+    wait $time
 
-    LD $led, %LED_NOSE
-    BSR @turn_led_off
-    LD $led %LED_LEFT
-    BSR @turn_led_on
-    WAIT $time
+    ld $led %LED_NOSE
+    bsr @turn_led_off
+    ld $led %LED_LEFT
+    bsr @turn_led_on
+    wait $time
 
-    LD $led, %LED_LEFT
-    BSR @turn_led_off
-    LD $led, %LED_RIGHT
-    BSR @turn_led_on
-    WAIT $time
+    ld $led %LED_LEFT
+    bsr @turn_led_off
+    ld $led %LED_RIGHT
+    bsr @turn_led_on
+    wait $time
 
-    BRA @loop
+    bra @loop
 
 @turn_led_on
-    LD $color, %GREEN
-    LD $brightness, 255
-    PALETTE $color, $brightness
-    LED $led, $ontime 
-    RTS
+    ld $color %GREEN
+    ld $brightness 255
+    palette $color $brightness
+    led $led $ontime 
+    rts
 
 @turn_led_off
-    LD $color, %OFF
-    LD $brightness, 255
-    PALETTE $color, $brightness
-    LED $led, $offtime
-    RTS
+    ld $color %OFF
+    ld $brightness 255
+    palette $color $brightness
+    led $led $offtime
+    rts

@@ -1,27 +1,31 @@
-include core/constants
+import core/constants
 
-define $r R0
-define $g R1
-define $b R2
-define $led R3
-define $transition R5
+$r          equ R0
+$g          equ R1
+$b          equ R2
+$led        equ R3
+$transition equ R5
 
-@Leds.Off()
-    PUSH 0b00000000, 0b00101111
-    CLR $r
-    CLR $g
-    CLR $b
-    LD $transition 5
-    LD $led, %LED_BOTTOM
-    LED $led, $transition
-    LD $led, %LED_LEFT
-    LED $led, $transition
-    LD $led, %LED_MIDDLE
-    LED $led, $transition
-    LD $led, %LED_RIGHT
-    LED $led, $transition
-    LD $led, %LED_NOSE
-    LED $led, $transition
-    PULL 0b00000000, 0b00101111
-    WAIT 1
-    RTS
+@Core.Leds.Off()
+    push R0 R1 R2 R3 R5
+
+    clr $r
+    clr $g
+    clr $b
+
+    ld $transition 5
+
+    ld $led %LED_BOTTOM
+    led $led $transition
+    ld $led %LED_LEFT
+    led $led $transition
+    ld $led %LED_MIDDLE
+    led $led $transition
+    ld $led %LED_RIGHT
+    led $led $transition
+    ld $led %LED_NOSE
+    led $led $transition
+
+    pull last
+    wait 1
+    rts

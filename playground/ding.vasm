@@ -6,87 +6,87 @@
 music_file DING midi/ding.mid
 
 @Main
-    NOP
-    CLR R7
-    CLR R0
-    INPUT R0 @interrupt_button_down
-    LD R0, 14
-    INPUT R0, @interrupt_exception
-    LD R0, 15
-    INPUT R0, @interrupt_timer
-    BSR @leds_off
-    BSR @init_audio
-    LD R0, music_file:DING
-    BSR @play_midi_file
-    BRA @interrupt_loop
+    nop
+    clr R7
+    clr R0
+    input R0 @interrupt_button_down
+    ld R0 14
+    input R0 @interrupt_exception
+    ld R0 15
+    input R0 @interrupt_timer
+    bsr @leds_off
+    bsr @init_audio
+    ld R0 music_file:DING
+    bsr @play_midi_file
+    bra @interrupt_loop
 
 @interrupt_button_down
-    BSR @leds_off
-    INC R7
-    LD R0, R7
-    LD R1, 255
-    PALETTE R0, R1
-    LD R5, 0
-    LD R4, 4
-    LED R4, R5
-    CLR R0
-    INPUTRST R0
-    RTI
+    bsr @leds_off
+    inc R7
+    ld R0 R7
+    ld R1 255
+    palette R0 R1
+    ld R5 0
+    ld R4 4
+    led R4 R5
+    clr R0
+    inputrst R0
+    rti
 
 @interrupt_timer
-    PUSH 255, 255
-    LD R0, 15
-    INPUTRST R0
-    PULL 255, 255
-    RTIJ @interrupt_loop
+    push R0
+    ld R0 15
+    inputrst R0
+    pull LAST
+    rtij @interrupt_loop
 
 @interrupt_exception
-    PUSH 255, 255
-    LD R0, 14
-    INPUTRST R0
-    PULL 255, 255
-    RTIJ @Main
+    push R0
+    ld R0 14
+    inputrst R0
+    pull last
+    rtij @Main
 
 @leds_off
-    LD R0, 0
-    LD R1, 0
-    PALETTE R0, R1
-    LD R5, 0
-    LD R4, 3
-    LED R4, R5
-    LD R4, 2
-    LED R4, R5
-    LD R4, 1
-    LED R4, R5
-    LD R4, 4
-    LED R4, R5
-    RTS
+    ld R0 0
+    ld R1 0
+    palette R0 R1
+    ld R5 0
+    ld R4 3
+    led R4 R5
+    ld R4 2
+    led R4 R5
+    ld R4 1
+    led R4 R5
+    ld R4 4
+    led R4 R5
+    rts
 
 @init_audio
-    MIDISTOP
-    WAVSTOP
-    LD R0, 230
-    MVOL R0
-    LD R1, 230
-    VOL R1
-    RTS
+    midistop
+    wavstop
+    ld R0 230
+    mvol R0
+    ld R1 230
+    vol R1
+    rts
 
 @play_midi_file
-    MIDIPLAY R0
+    midiplay R0
 @loop
-    WAIT 1
-    MUSIC R0
-    TST R0
-    BNE @loop
-    MIDISTOP
-    RTS
+    wait 1
+    music R0
+    tst R0
+    bne @loop
+    midistop
+    rts
 
 @interrupt_loop
-    WAIT 1
-    CLR R0
-    INPUT R0, @interrupt_button_down
-    LD R0, 14
-    INPUT R0, @interrupt_exception
-    LD R0, 15
-    INPUT R0, @interrupt_timer
-    BRA @interrupt_loop
+    wait 1
+    clr R0
+    input R0 @interrupt_button_down
+    ld R0 14
+    input R0 @interrupt_exception
+    ld R0 15
+    input R0 @interrupt_timer
+    bra @interrupt_loop

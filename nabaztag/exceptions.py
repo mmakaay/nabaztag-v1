@@ -41,7 +41,7 @@ class InvalidOperandsError(NabaztagException):
     def __init__(self, opcode, operands):
         super().__init__(
                 "Invalid operands for opcode %s: %s" %
-                (opcode, ", ".join(operands)))
+                (opcode, " ".join(operands)))
 
 class UnresolvedSymbolError(NabaztagException):
     def __init__(self, symbol):

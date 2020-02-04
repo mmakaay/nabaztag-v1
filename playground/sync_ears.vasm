@@ -1,8 +1,6 @@
-include core/ears/sync
+import core/idle
+import core/ears/sync
 
 @Main
-    BSR @Ears.Sync()
-
-@end
-    WAIT 1
-    BRA @end
+    bsr @Core.Ears.Sync()
+    bra @Core.Idle 

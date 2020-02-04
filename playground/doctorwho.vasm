@@ -1,23 +1,22 @@
-include core/leds/off
+import core/leds/off
+import core/idle
 
 music_file TARDIS midi/doctorwho.mid
 
-define $vol  R0
-define $file R0
+$vol  equ R0
+$file equ R0
 
 @Main
-    BSR @Leds.Off()
+    bsr @Core.Leds.Off()
 
     # Set volume
-    LD $vol 255
-    MVOL $vol
-    LD $vol 150
-    VOL $vol
+    ld $vol 255
+    mvol $vol
+    ld $vol 150
+    vol $vol
 
     # Start MIDI playback
-    LD $file, music_file:TARDIS
-    MIDIPLAY $file
+    ld $file music_file:TARDIS
+    midiplay $file
 
-@end
-    WAIT 10
-    BRA @end
+    bra @Core.Idle

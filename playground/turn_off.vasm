@@ -1,6 +1,6 @@
-include core/turn_off
-include core/idle
+import core/turn_off
+import core/idle
 
 @Main
-  BSR @TurnOff()
-  BRA @Idle
+  bsr @Core.TurnOff()
+  bra @Core.Idle

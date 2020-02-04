@@ -5,8 +5,7 @@ from nabaztag.vasm.opcodes import parse_instruction
 
 
 SYMBOL = re.compile('^(@\S*)\s*$')
-SPLITTER = re.compile('(?:\s*,\s*|\s+)')
-
+SPLITTER = re.compile('\s+')
 
 def parse(preprocessed):
     """Take lines of instructions and code sources as provided by the

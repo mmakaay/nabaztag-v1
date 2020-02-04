@@ -1,8 +1,8 @@
-include core/reset
-include core/leds/twinkle
+import core/reset
+import core/leds/twinkle
 
 @Main
-    BSR @Reset()
+    bsr @Core.Reset()
 @loop
-    BSR @Leds.Twinkle()
-    BRA @loop
+    bsr @Core.Leds.Twinkle()
+    bra @loop

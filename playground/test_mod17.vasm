@@ -1,340 +1,340 @@
-# This is a unit test (yeah I know, in assembly) for the Math.DivMod17()
-# subroutine. When te tests are running, the nose goes blue.
-# On success, the nose goes green, red otherwise.
+# This is a unit test (yeah I know in assembly) for the @Core.Math.DivMod17()
+# subroutine. When te tests are running the nose goes blue.
+# On success the nose goes green red otherwise.
 
-include core/constants
-include core/math/divmod17
-include core/leds/off
+import core/constants
+import core/leds/off
+import core/math/divmod17
 
-define $input      R0
-define $div        R0
-define $mod        R1
-define $idx_hi     R3
-define $idx_lo     R4
-define $test_div   R5
-define $test_mod   R6
-define $test_val   R7
-define $test_last  R8
-define $color      R9
-define $brightness R10
-define $led        R11
-define $transition R12
+$input        equ R0
+$div          equ R0
+$mod          equ R1
+$table_pos_hi equ R3
+$table_pos_lo equ R4
+$test_div     equ R5
+$test_mod     equ R6
+$test_val     equ R7
+$test_last    equ R8
+$color        equ R9
+$brightness   equ R10
+$led          equ R11
+$transition   equ R12
 
 @Main
-    BSR @Leds.Off()
-    CLR $idx_hi
-    CLR $idx_lo
-    LD $test_last, 255
+    bsr @Core.Leds.Off()
+    clr $table_pos_hi
+    clr $table_pos_lo
+    ld $test_last 255
 
     # Turn nose blue to indicate that testing started.
-    LD $color, %BLUE
-    BSR @turn_led_on()
-    WAIT 10
+    ld $color %BLUE
+    bsr @turn_led_on()
+    wait 10
 
 @next_test
     # Compute the div and mod for the next test case
-    LDTW $test_val, @table.testcases
-    LD $input, $test_val
-    BSR @Math.DivMod17()
+    ldtw $test_val @table.testcases
+    ld $input $test_val
+    bsr @Core.Math.DivMod17()
 
     # Check div outcome
-    INCW $idx_hi, $idx_lo
-    LDTW $test_div, @table.testcases
-    CMP $div, $test_div
-    BNE @fail
+    incw $table_pos_hi $table_pos_lo
+    ldtw $test_div @table.testcases
+    cmp $div $test_div
+    bne @fail
 
     # Check mod outcome
-    INCW $idx_hi, $idx_lo
-    LDTW $test_mod, @table.testcases
-    CMP $mod, $test_mod
-    BNE @fail
+    incw $table_pos_hi $table_pos_lo
+    ldtw $test_mod @table.testcases
+    cmp $mod $test_mod
+    bne @fail
 
-    # When at test case 255, we're done.
-    CMP $test_last, $test_val
-    BEQ @success
+    # When at test case 255 we're done.
+    cmp $test_last $test_val
+    beq @success
 
     # Go to the next test case.
-    INCW $idx_hi, $idx_lo
-    BRA @next_test
+    incw $table_pos_hi $table_pos_lo
+    bra @next_test
 
 @success
-    LD $color, %GREEN
-    BSR @turn_led_on()
-    BRA @end
+    ld $color %GREEN
+    bsr @turn_led_on()
+    bra @end
 
 @fail
-    LD $color, %RED
-    BSR @turn_led_on()
-    BRA @end
+    LD $color %RED
+    bsr @turn_led_on()
+    bra @end
 
 @end
-    WAIT 10
-    BRA @end
+    wait 10
+    bra @end
 
 @turn_led_on()
-    LD $brightness, 255
-    PALETTE $color, $brightness
-    LD $led, %LED_NOSE
-    LD $transition, 10
-    LED $led, $transition
-    WAIT 1
-    RTS
+    ld $brightness 255
+    palette $color $brightness
+    ld $led %LED_NOSE
+    ld $transition 10
+    led $led $transition
+    wait 1
+    rts
 
 @table.testcases
     #   val   div  mod
-    FCB   0,    0,   0
-    FCB   1,    0,   1
-    FCB   2,    0,   2
-    FCB   3,    0,   3
-    FCB   4,    0,   4
-    FCB   5,    0,   5
-    FCB   6,    0,   6
-    FCB   7,    0,   7
-    FCB   8,    0,   8
-    FCB   9,    0,   9
-    FCB  10,    0,  10
-    FCB  11,    0,  11
-    FCB  12,    0,  12
-    FCB  13,    0,  13
-    FCB  14,    0,  14
-    FCB  15,    0,  15
-    FCB  16,    0,  16
-    FCB  17,    1,   0
-    FCB  18,    1,   1
-    FCB  19,    1,   2
-    FCB  20,    1,   3
-    FCB  21,    1,   4
-    FCB  22,    1,   5
-    FCB  23,    1,   6
-    FCB  24,    1,   7
-    FCB  25,    1,   8
-    FCB  26,    1,   9
-    FCB  27,    1,  10
-    FCB  28,    1,  11
-    FCB  29,    1,  12
-    FCB  30,    1,  13
-    FCB  31,    1,  14
-    FCB  32,    1,  15
-    FCB  33,    1,  16
-    FCB  34,    2,   0
-    FCB  35,    2,   1
-    FCB  36,    2,   2
-    FCB  37,    2,   3
-    FCB  38,    2,   4
-    FCB  39,    2,   5
-    FCB  40,    2,   6
-    FCB  41,    2,   7
-    FCB  42,    2,   8
-    FCB  43,    2,   9
-    FCB  44,    2,  10
-    FCB  45,    2,  11
-    FCB  46,    2,  12
-    FCB  47,    2,  13
-    FCB  48,    2,  14
-    FCB  49,    2,  15
-    FCB  50,    2,  16
-    FCB  51,    3,   0
-    FCB  52,    3,   1
-    FCB  53,    3,   2
-    FCB  54,    3,   3
-    FCB  55,    3,   4
-    FCB  56,    3,   5
-    FCB  57,    3,   6
-    FCB  58,    3,   7
-    FCB  59,    3,   8
-    FCB  60,    3,   9
-    FCB  61,    3,  10
-    FCB  62,    3,  11
-    FCB  63,    3,  12
-    FCB  64,    3,  13
-    FCB  65,    3,  14
-    FCB  66,    3,  15
-    FCB  67,    3,  16
-    FCB  68,    4,   0
-    FCB  69,    4,   1
-    FCB  70,    4,   2
-    FCB  71,    4,   3
-    FCB  72,    4,   4
-    FCB  73,    4,   5
-    FCB  74,    4,   6
-    FCB  75,    4,   7
-    FCB  76,    4,   8
-    FCB  77,    4,   9
-    FCB  78,    4,  10
-    FCB  79,    4,  11
-    FCB  80,    4,  12
-    FCB  81,    4,  13
-    FCB  82,    4,  14
-    FCB  83,    4,  15
-    FCB  84,    4,  16
-    FCB  85,    5,   0
-    FCB  86,    5,   1
-    FCB  87,    5,   2
-    FCB  88,    5,   3
-    FCB  89,    5,   4
-    FCB  90,    5,   5
-    FCB  91,    5,   6
-    FCB  92,    5,   7
-    FCB  93,    5,   8
-    FCB  94,    5,   9
-    FCB  95,    5,  10
-    FCB  96,    5,  11
-    FCB  97,    5,  12
-    FCB  98,    5,  13
-    FCB  99,    5,  14
-    FCB 100,    5,  15
-    FCB 101,    5,  16
-    FCB 102,    6,   0
-    FCB 103,    6,   1
-    FCB 104,    6,   2
-    FCB 105,    6,   3
-    FCB 106,    6,   4
-    FCB 107,    6,   5
-    FCB 108,    6,   6
-    FCB 109,    6,   7
-    FCB 110,    6,   8
-    FCB 111,    6,   9
-    FCB 112,    6,  10
-    FCB 113,    6,  11
-    FCB 114,    6,  12
-    FCB 115,    6,  13
-    FCB 116,    6,  14
-    FCB 117,    6,  15
-    FCB 118,    6,  16
-    FCB 119,    7,   0
-    FCB 120,    7,   1
-    FCB 121,    7,   2
-    FCB 122,    7,   3
-    FCB 123,    7,   4
-    FCB 124,    7,   5
-    FCB 125,    7,   6
-    FCB 126,    7,   7
-    FCB 127,    7,   8
-    FCB 128,    7,   9
-    FCB 129,    7,  10
-    FCB 130,    7,  11
-    FCB 131,    7,  12
-    FCB 132,    7,  13
-    FCB 133,    7,  14
-    FCB 134,    7,  15
-    FCB 135,    7,  16
-    FCB 136,    8,   0
-    FCB 137,    8,   1
-    FCB 138,    8,   2
-    FCB 139,    8,   3
-    FCB 140,    8,   4
-    FCB 141,    8,   5
-    FCB 142,    8,   6
-    FCB 143,    8,   7
-    FCB 144,    8,   8
-    FCB 145,    8,   9
-    FCB 146,    8,  10
-    FCB 147,    8,  11
-    FCB 148,    8,  12
-    FCB 149,    8,  13
-    FCB 150,    8,  14
-    FCB 151,    8,  15
-    FCB 152,    8,  16
-    FCB 153,    9,   0
-    FCB 154,    9,   1
-    FCB 155,    9,   2
-    FCB 156,    9,   3
-    FCB 157,    9,   4
-    FCB 158,    9,   5
-    FCB 159,    9,   6
-    FCB 160,    9,   7
-    FCB 161,    9,   8
-    FCB 162,    9,   9
-    FCB 163,    9,  10
-    FCB 164,    9,  11
-    FCB 165,    9,  12
-    FCB 166,    9,  13
-    FCB 167,    9,  14
-    FCB 168,    9,  15
-    FCB 169,    9,  16
-    FCB 170,   10,   0
-    FCB 171,   10,   1
-    FCB 172,   10,   2
-    FCB 173,   10,   3
-    FCB 174,   10,   4
-    FCB 175,   10,   5
-    FCB 176,   10,   6
-    FCB 177,   10,   7
-    FCB 178,   10,   8
-    FCB 179,   10,   9
-    FCB 180,   10,  10
-    FCB 181,   10,  11
-    FCB 182,   10,  12
-    FCB 183,   10,  13
-    FCB 184,   10,  14
-    FCB 185,   10,  15
-    FCB 186,   10,  16
-    FCB 187,   11,   0
-    FCB 188,   11,   1
-    FCB 189,   11,   2
-    FCB 190,   11,   3
-    FCB 191,   11,   4
-    FCB 192,   11,   5
-    FCB 193,   11,   6
-    FCB 194,   11,   7
-    FCB 195,   11,   8
-    FCB 196,   11,   9
-    FCB 197,   11,  10
-    FCB 198,   11,  11
-    FCB 199,   11,  12
-    FCB 200,   11,  13
-    FCB 201,   11,  14
-    FCB 202,   11,  15
-    FCB 203,   11,  16
-    FCB 204,   12,   0
-    FCB 205,   12,   1
-    FCB 206,   12,   2
-    FCB 207,   12,   3
-    FCB 208,   12,   4
-    FCB 209,   12,   5
-    FCB 210,   12,   6
-    FCB 211,   12,   7
-    FCB 212,   12,   8
-    FCB 213,   12,   9
-    FCB 214,   12,  10
-    FCB 215,   12,  11
-    FCB 216,   12,  12
-    FCB 217,   12,  13
-    FCB 218,   12,  14
-    FCB 219,   12,  15
-    FCB 220,   12,  16
-    FCB 221,   13,   0
-    FCB 222,   13,   1
-    FCB 223,   13,   2
-    FCB 224,   13,   3
-    FCB 225,   13,   4
-    FCB 226,   13,   5
-    FCB 227,   13,   6
-    FCB 228,   13,   7
-    FCB 229,   13,   8
-    FCB 230,   13,   9
-    FCB 231,   13,  10
-    FCB 232,   13,  11
-    FCB 233,   13,  12
-    FCB 234,   13,  13
-    FCB 235,   13,  14
-    FCB 236,   13,  15
-    FCB 237,   13,  16
-    FCB 238,   14,   0
-    FCB 239,   14,   1
-    FCB 240,   14,   2
-    FCB 241,   14,   3
-    FCB 242,   14,   4
-    FCB 243,   14,   5
-    FCB 244,   14,   6
-    FCB 245,   14,   7
-    FCB 246,   14,   8
-    FCB 247,   14,   9
-    FCB 248,   14,  10
-    FCB 249,   14,  11
-    FCB 250,   14,  12
-    FCB 251,   14,  13
-    FCB 252,   14,  14
-    FCB 253,   14,  15
-    FCB 254,   14,  16
-    FCB 255,   15,   0
+    fcb   0    0   0
+    fcb   1    0   1
+    fcb   2    0   2
+    fcb   3    0   3
+    fcb   4    0   4
+    fcb   5    0   5
+    fcb   6    0   6
+    fcb   7    0   7
+    fcb   8    0   8
+    fcb   9    0   9
+    fcb  10    0  10
+    fcb  11    0  11
+    fcb  12    0  12
+    fcb  13    0  13
+    fcb  14    0  14
+    fcb  15    0  15
+    fcb  16    0  16
+    fcb  17    1   0
+    fcb  18    1   1
+    fcb  19    1   2
+    fcb  20    1   3
+    fcb  21    1   4
+    fcb  22    1   5
+    fcb  23    1   6
+    fcb  24    1   7
+    fcb  25    1   8
+    fcb  26    1   9
+    fcb  27    1  10
+    fcb  28    1  11
+    fcb  29    1  12
+    fcb  30    1  13
+    fcb  31    1  14
+    fcb  32    1  15
+    fcb  33    1  16
+    fcb  34    2   0
+    fcb  35    2   1
+    fcb  36    2   2
+    fcb  37    2   3
+    fcb  38    2   4
+    fcb  39    2   5
+    fcb  40    2   6
+    fcb  41    2   7
+    fcb  42    2   8
+    fcb  43    2   9
+    fcb  44    2  10
+    fcb  45    2  11
+    fcb  46    2  12
+    fcb  47    2  13
+    fcb  48    2  14
+    fcb  49    2  15
+    fcb  50    2  16
+    fcb  51    3   0
+    fcb  52    3   1
+    fcb  53    3   2
+    fcb  54    3   3
+    fcb  55    3   4
+    fcb  56    3   5
+    fcb  57    3   6
+    fcb  58    3   7
+    fcb  59    3   8
+    fcb  60    3   9
+    fcb  61    3  10
+    fcb  62    3  11
+    fcb  63    3  12
+    fcb  64    3  13
+    fcb  65    3  14
+    fcb  66    3  15
+    fcb  67    3  16
+    fcb  68    4   0
+    fcb  69    4   1
+    fcb  70    4   2
+    fcb  71    4   3
+    fcb  72    4   4
+    fcb  73    4   5
+    fcb  74    4   6
+    fcb  75    4   7
+    fcb  76    4   8
+    fcb  77    4   9
+    fcb  78    4  10
+    fcb  79    4  11
+    fcb  80    4  12
+    fcb  81    4  13
+    fcb  82    4  14
+    fcb  83    4  15
+    fcb  84    4  16
+    fcb  85    5   0
+    fcb  86    5   1
+    fcb  87    5   2
+    fcb  88    5   3
+    fcb  89    5   4
+    fcb  90    5   5
+    fcb  91    5   6
+    fcb  92    5   7
+    fcb  93    5   8
+    fcb  94    5   9
+    fcb  95    5  10
+    fcb  96    5  11
+    fcb  97    5  12
+    fcb  98    5  13
+    fcb  99    5  14
+    fcb 100    5  15
+    fcb 101    5  16
+    fcb 102    6   0
+    fcb 103    6   1
+    fcb 104    6   2
+    fcb 105    6   3
+    fcb 106    6   4
+    fcb 107    6   5
+    fcb 108    6   6
+    fcb 109    6   7
+    fcb 110    6   8
+    fcb 111    6   9
+    fcb 112    6  10
+    fcb 113    6  11
+    fcb 114    6  12
+    fcb 115    6  13
+    fcb 116    6  14
+    fcb 117    6  15
+    fcb 118    6  16
+    fcb 119    7   0
+    fcb 120    7   1
+    fcb 121    7   2
+    fcb 122    7   3
+    fcb 123    7   4
+    fcb 124    7   5
+    fcb 125    7   6
+    fcb 126    7   7
+    fcb 127    7   8
+    fcb 128    7   9
+    fcb 129    7  10
+    fcb 130    7  11
+    fcb 131    7  12
+    fcb 132    7  13
+    fcb 133    7  14
+    fcb 134    7  15
+    fcb 135    7  16
+    fcb 136    8   0
+    fcb 137    8   1
+    fcb 138    8   2
+    fcb 139    8   3
+    fcb 140    8   4
+    fcb 141    8   5
+    fcb 142    8   6
+    fcb 143    8   7
+    fcb 144    8   8
+    fcb 145    8   9
+    fcb 146    8  10
+    fcb 147    8  11
+    fcb 148    8  12
+    fcb 149    8  13
+    fcb 150    8  14
+    fcb 151    8  15
+    fcb 152    8  16
+    fcb 153    9   0
+    fcb 154    9   1
+    fcb 155    9   2
+    fcb 156    9   3
+    fcb 157    9   4
+    fcb 158    9   5
+    fcb 159    9   6
+    fcb 160    9   7
+    fcb 161    9   8
+    fcb 162    9   9
+    fcb 163    9  10
+    fcb 164    9  11
+    fcb 165    9  12
+    fcb 166    9  13
+    fcb 167    9  14
+    fcb 168    9  15
+    fcb 169    9  16
+    fcb 170   10   0
+    fcb 171   10   1
+    fcb 172   10   2
+    fcb 173   10   3
+    fcb 174   10   4
+    fcb 175   10   5
+    fcb 176   10   6
+    fcb 177   10   7
+    fcb 178   10   8
+    fcb 179   10   9
+    fcb 180   10  10
+    fcb 181   10  11
+    fcb 182   10  12
+    fcb 183   10  13
+    fcb 184   10  14
+    fcb 185   10  15
+    fcb 186   10  16
+    fcb 187   11   0
+    fcb 188   11   1
+    fcb 189   11   2
+    fcb 190   11   3
+    fcb 191   11   4
+    fcb 192   11   5
+    fcb 193   11   6
+    fcb 194   11   7
+    fcb 195   11   8
+    fcb 196   11   9
+    fcb 197   11  10
+    fcb 198   11  11
+    fcb 199   11  12
+    fcb 200   11  13
+    fcb 201   11  14
+    fcb 202   11  15
+    fcb 203   11  16
+    fcb 204   12   0
+    fcb 205   12   1
+    fcb 206   12   2
+    fcb 207   12   3
+    fcb 208   12   4
+    fcb 209   12   5
+    fcb 210   12   6
+    fcb 211   12   7
+    fcb 212   12   8
+    fcb 213   12   9
+    fcb 214   12  10
+    fcb 215   12  11
+    fcb 216   12  12
+    fcb 217   12  13
+    fcb 218   12  14
+    fcb 219   12  15
+    fcb 220   12  16
+    fcb 221   13   0
+    fcb 222   13   1
+    fcb 223   13   2
+    fcb 224   13   3
+    fcb 225   13   4
+    fcb 226   13   5
+    fcb 227   13   6
+    fcb 228   13   7
+    fcb 229   13   8
+    fcb 230   13   9
+    fcb 231   13  10
+    fcb 232   13  11
+    fcb 233   13  12
+    fcb 234   13  13
+    fcb 235   13  14
+    fcb 236   13  15
+    fcb 237   13  16
+    fcb 238   14   0
+    fcb 239   14   1
+    fcb 240   14   2
+    fcb 241   14   3
+    fcb 242   14   4
+    fcb 243   14   5
+    fcb 244   14   6
+    fcb 245   14   7
+    fcb 246   14   8
+    fcb 247   14   9
+    fcb 248   14  10
+    fcb 249   14  11
+    fcb 250   14  12
+    fcb 251   14  13
+    fcb 252   14  14
+    fcb 253   14  15
+    fcb 254   14  16
+    fcb 255   15   0

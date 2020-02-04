@@ -1,7 +1,7 @@
 # Subroutine: @DivMod17()
 #
 # Compute the DIV + MOD 17 for an input value.
-# This case was implemented specifically for supporting the motor encoder,
+# This case was implemented specifically for supporting the motor encoder
 # which increments 17 ticks on every full turn of the related ear.
 #
 # Input:
@@ -10,13 +10,13 @@
 #   R0: the resulting div value
 #   R1: the resulting mod value
 #
-# E.g. input R0=38, output R0=2, R1=4 (because 2*17 + 4 = 38).
+# E.g. input R0=38 output R0=2 R1=4 (because 2*17 + 4 = 38).
 
-@Math.DivMod17()
-    PUSH 0, 0b00000100
-    LD R1, 17
-    DIV R0, R1
-    LD R2, 15
-    DIV R1, R2
-    PULL 0, 0b00000100
-    RTS
+@Core.Math.DivMod17()
+    push R2
+    ld R1 17
+    div R0 R1
+    ld R2 15
+    div R1 R2
+    pull last
+    rts

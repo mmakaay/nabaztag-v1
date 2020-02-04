@@ -1,6 +1,6 @@
-include core/leds/off
-include core/leds/twinkle
-include core/sound/off
+import core/leds/off
+import core/leds/twinkle
+import core/sound/off
 
 # TODO use interrupt on button to move to next midi
 # Current version doesn't work well
@@ -9,47 +9,47 @@ music_file OOOH midi/twilightzone.mid
 music_file TARDIS midi/doctorwho.mid
 music_file BLAKES7 midi/blakes7.mid
 
-define %max_midi     2
-define $midi_file    R0
-define $max_midi     R1
-define $status       R2
+%max_midi  equ 2
+$midi_file equ R0
+$max_midi  equ R1
+$status    equ R2
 
 @Main
-    LD R0, 255
-    MVOL R0
-    LD R0, 200
-    VOL R0
+    ld R0 255
+    mvol R0
+    ld R0 200
+    vol R0
 
-    LD $midi_file 0
-    LD $max_midi %max_midi
+    ld $midi_file 0
+    ld $max_midi %max_midi
 
 @play_midi
-    MIDIPLAY $midi_file
+    midiplay $midi_file
 
 @wait_for_end_of_midi
-    BSR @Leds.Twinkle()
+    bsr @Core.Leds.Twinkle()
 
-    PUSHBUTTON $status
-    TST $status
-    BNE @select_next_midi
+    pushbutton $status
+    tst $status
+    bne @select_next_midi
 
-    MUSIC $status
-    TST $status
-    BNE @wait_for_end_of_midi
+    music $status
+    tst $status
+    bne @wait_for_end_of_midi
 
 @wait_for_buttonpress_to_play_next_midi
-    BSR @Sound.Off()
-    BSR @Leds.Off()
-    WAIT 1
-    PUSHBUTTON $status
-    TST $status
-    BEQ @wait_for_buttonpress_to_play_next_midi
+    bsr @Core.Sound.Off()
+    bsr @Core.Leds.Off()
+    wait 1
+    pushbutton $status
+    tst $status
+    beq @wait_for_buttonpress_to_play_next_midi
 
 @select_next_midi
-    BSR @Sound.Off()
-    BSR @Leds.Off()
-    INC $midi_file
-    CMP $midi_file $max_midi
-    BLE @play_midi
-    CLR $midi_file
-    BLE @play_midi
+    bsr @Core.Sound.Off()
+    bsr @Core.Leds.Off()
+    inc $midi_file
+    cmp $midi_file $max_midi
+    ble @play_midi
+    clr $midi_file
+    ble @play_midi

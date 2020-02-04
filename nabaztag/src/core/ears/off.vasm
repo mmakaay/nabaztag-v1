@@ -1,15 +1,15 @@
-include core/constants
+import core/constants
 
-define $motor     R0
-define $direction R1
+$motor     equ R0
+$direction equ R1
 
-@Ears.Off()
-    PUSH 0x00000000, 0x00000011
-    LD $direction, %STOP
-    LD $motor, %MOTOR_LEFT 
-    MOTOR $motor, $direction
-    LD $motor, %MOTOR_RIGHT 
-    MOTOR $motor, $direction
-    WAIT 1
-    PULL 0x00000000, 0x00000011
-    RTS
+@Core.Ears.Off()
+    push R0 R1
+    ld $direction %STOP
+    ld $motor %MOTOR_LEFT 
+    motor $motor $direction
+    ld $motor %MOTOR_RIGHT 
+    motor $motor $direction
+    wait 1
+    pull last
+    rts
