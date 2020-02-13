@@ -414,8 +414,13 @@ def _try_parse_operand(expected_type, operand):
     try:
         if expected_type == 'i':
             value = int(operand, 0)
+            # Positive byte values [0,255]
             if value >= 0x00 and value <= 0xff:
                 return ('integer', value)
+            # Negative byte values [-128, -1]
+            if value >= -128 and value <= -1:
+                twoscomplement = ((-value - 1) ^ 0x7f) | 0x80
+                return ('integer', twoscomplement)
         elif expected_type == 'w':
             if SYMBOLIC_ADDRESS.match(operand):
                 return ('symbol', operand)
@@ -554,7 +559,7 @@ def bytecode_to_instruction(bytecode):
             r = bytecode[0] & 0x0f
         else:
             r = bytecode[1]
-        operands = [('register', r)] 
+        operands = [('register', r)]
     elif operand_types == 'ri':
         # The opcode uses the 4 most significant bits. The 4 least
         # significant bits store the register. The integer value is

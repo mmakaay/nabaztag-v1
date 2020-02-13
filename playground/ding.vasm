@@ -1,7 +1,7 @@
-# This is a re-implementation of the code/ding.bin file that is included
-# in the webdocs tree of the NabaztagLives project. I re-implemented it
-# as a test for the assembler and to see if I could play a MIDI file from
-# my toolchain.
+; This is a re-implementation of the code/ding.bin file that is included
+; in the webdocs tree of the NabaztagLives project. I re-implemented it
+; as a test for the assembler and to see if I could play a MIDI file from
+; my toolchain.
 
 music_file DING midi/ding.mid
 

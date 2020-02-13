@@ -1,0 +1,20 @@
+; Subroutine: @Core.Ears.Stop()
+;
+; Turns both ear motors off.
+
+import core/constants
+
+$ear       equ R0
+$direction equ R1
+
+@Core.Ears.Stop()
+    push $ear $direction
+
+    ld $direction %STOP
+    ld $ear %EAR_LEFT
+    motor $ear $direction
+    ld $ear %EAR_RIGHT
+    motor $ear $direction
+
+    pull last
+    rts

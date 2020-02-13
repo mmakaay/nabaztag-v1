@@ -1,0 +1,9 @@
+import core/constants
+import core/idle
+
+@Main
+    LD R2 0
+    LD R3 1
+    MOTOR R2 R3
+
+    bra @Core.Idle 

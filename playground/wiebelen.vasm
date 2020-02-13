@@ -1,6 +1,6 @@
 import core/idle
 import core/leds/off
-import core/leds/twinkle
+import core/leds/random
 
 music_file HUPPEL audio/wiebelen.vox
 
@@ -51,10 +51,12 @@ music_file HUPPEL audio/wiebelen.vox
     wavplay R0
 
 @wait_for_end_of_music
-    bsr @Core.Leds.Twinkle()
+    ld R4 5
+    bsr @Core.Leds.Random()
+    wait 5
     music R0
     tst R0
     bne @wait_for_end_of_music
-    bsr @Core.Leds.Off()
 
+    bsr @Core.Leds.Off()
     bra @Core.Idle

@@ -1,6 +1,6 @@
-# This is a unit test (yeah I know in assembly) for the @Core.Math.DivMod17()
-# subroutine. When te tests are running the nose goes blue.
-# On success the nose goes green red otherwise.
+; This is a unit test (yeah I know in assembly) for the @Core.Math.DivMod17()
+; subroutine. When te tests are running the nose goes blue.
+; On success the nose goes green red otherwise.
 
 import core/constants
 import core/leds/off
@@ -26,44 +26,44 @@ $transition   equ R12
     clr $table_pos_lo
     ld $test_last 255
 
-    # Turn nose blue to indicate that testing started.
-    ld $color %BLUE
+    ; Turn nose blue to indicate that testing started.
+    ld $color %COLOR_BLUE
     bsr @turn_led_on()
     wait 10
 
 @next_test
-    # Compute the div and mod for the next test case
+    ; Compute the div and mod for the next test case
     ldtw $test_val @table.testcases
     ld $input $test_val
     bsr @Core.Math.DivMod17()
 
-    # Check div outcome
+    ; Check div outcome
     incw $table_pos_hi $table_pos_lo
     ldtw $test_div @table.testcases
     cmp $div $test_div
     bne @fail
 
-    # Check mod outcome
+    ; Check mod outcome
     incw $table_pos_hi $table_pos_lo
     ldtw $test_mod @table.testcases
     cmp $mod $test_mod
     bne @fail
 
-    # When at test case 255 we're done.
+    ; When at test case 255 we're done.
     cmp $test_last $test_val
     beq @success
 
-    # Go to the next test case.
+    ; Go to the next test case.
     incw $table_pos_hi $table_pos_lo
     bra @next_test
 
 @success
-    ld $color %GREEN
+    ld $color %COLOR_GREEN
     bsr @turn_led_on()
     bra @end
 
 @fail
-    LD $color %RED
+    LD $color %COLOR_RED
     bsr @turn_led_on()
     bra @end
 
@@ -81,7 +81,7 @@ $transition   equ R12
     rts
 
 @table.testcases
-    #   val   div  mod
+    ;   val   div  mod
     fcb   0    0   0
     fcb   1    0   1
     fcb   2    0   2

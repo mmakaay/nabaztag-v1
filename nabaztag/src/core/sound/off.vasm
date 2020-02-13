@@ -1,3 +1,7 @@
+; Subroutine: @Core.Sound.Off()
+;
+; Turn the MIDI player and the VOX player off.
+
 @Core.Sound.Off()
     midistop
     wavstop

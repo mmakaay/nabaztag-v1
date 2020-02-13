@@ -1,8 +1,13 @@
 import core/reset
-import core/leds/twinkle
+import core/leds/random
+
+$transition equ R4
+%transition_time equ 10
 
 @Main
     bsr @Core.Reset()
 @loop
-    bsr @Core.Leds.Twinkle()
+    ld $transition %transition_time
+    bsr @Core.Leds.Random()
+    wait %transition_time
     bra @loop

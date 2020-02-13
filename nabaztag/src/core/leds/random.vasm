@@ -1,0 +1,29 @@
+; Subroutine: @Core.Leds.Random()
+;
+; Set all leds to a random color, using the transition time.
+;
+; Input:
+;   R4: the transition time to apply
+
+import core/constants
+
+$r          equ R0
+$g          equ R1
+$b          equ R2
+$led        equ R3
+$transition equ R4
+
+@Core.Leds.Random()
+    push $g $g $b $led $transition
+
+    ld $led %LED_MAX
+    @led_to_random_color
+        rnd $r                  ; Select a random RGB color
+        rnd $g
+        rnd $b
+        led $led $transition    ; Set the LED to the random color
+        dec $led                ; And do so for all available LEDs
+        bne @led_to_random_color
+
+    pull last
+    rts

@@ -1,10 +1,10 @@
 import core/sound/off
 import core/leds/off
-import core/ears/off
+import core/ears/stop
 import core/ears/sync
 
 @Core.TurnOff()
     bsr @Core.Sound.Off()
     bsr @Core.Leds.Off()
-    bsr @Core.Ears.Off()
+    bsr @Core.Ears.Stop()
     rts

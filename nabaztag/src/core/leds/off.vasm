@@ -1,3 +1,7 @@
+; Subroutine: Core.Leds.Off()
+;
+; Turn all the LEDs off.
+
 import core/constants
 
 $r          equ R0
@@ -7,24 +11,19 @@ $led        equ R3
 $transition equ R5
 
 @Core.Leds.Off()
-    push R0 R1 R2 R3 R5
+    push $r $g $b $led $transition
 
     clr $r
     clr $g
     clr $b
 
+    ld $led %LED_MAX
     ld $transition 5
 
-    ld $led %LED_BOTTOM
-    led $led $transition
-    ld $led %LED_LEFT
-    led $led $transition
-    ld $led %LED_MIDDLE
-    led $led $transition
-    ld $led %LED_RIGHT
-    led $led $transition
-    ld $led %LED_NOSE
-    led $led $transition
+    @led_to_random_color
+        led $led $transition
+        dec $led
+        bne @led_to_random_color
 
     pull last
     wait 1

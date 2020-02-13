@@ -1,0 +1,54 @@
+; Relative offsets for RAM fields to store the state for an ear.
+
+%RAM_FLD_EAR_MOTOR     equ 0 ; Motor (0:stop, 1:forward, 2:reverse, 3:no sync)
+%RAM_FLD_EAR_TARGET    equ 1 ; Target ear position (0 - 19)
+%RAM_FLD_EAR_POSITION  equ 2 ; Last known ear position (0 - 19)
+%RAM_FLD_EAR_ENCODER   equ 3 ; Last known encoder value (0 - 255)
+%RAM_FLD_EAR_TIMEH     equ 4 ; Last encoder change time (high byte of MSEC)
+%RAM_FLD_EAR_TIMEL     equ 5 ; Last encoder change time (low byte of MSEC)
+
+; Reserve RAM fields for keeping track of ear state.
+
+*LEFT_EAR_MOTOR        rmb 1
+*LEFT_EAR_TARGET       rmb 1
+*LEFT_EAR_POSITION     rmb 1
+*LEFT_EAR_ENCODER      rmb 1
+*LEFT_EAR_TIMEH        rmb 1
+*LEFT_EAR_TIMEL        rmb 1
+
+*RIGHT_EAR_MOTOR       rmb 1
+*RIGHT_EAR_TARGET      rmb 1
+*RIGHT_EAR_POSITION    rmb 1
+*RIGHT_EAR_ENCODER     rmb 1
+*RIGHT_EAR_TIMEH       rmb 1
+*RIGHT_EAR_TIMEL       rmb 1
+
+; Register aliases used by various ear subroutines.
+
+$EAR                   equ R11
+$DIR                   equ R12
+$POS                   equ R13
+*EAR_RAM               equ R14
+
+
+; Subroutine: @Core.Ears.InitRam()
+;
+; Lookup the starting position of the RAM data for the provided $EAR.
+; This position can be combined with the %RAM_FLD_* definitions
+; to access the individual RAM data fields for the ear using the
+; LDR opcode.
+;
+; Input:
+;   $EAR (R12): The ear for which to lookup the RAM starting position
+; Output:
+;   *EAR_RAM (R11): The RAM address offset for the ear's RAM data
+
+@Core.Ears.InitRam()
+    tst $EAR
+    bne @init_ram_right_ear
+    @init_ram_left_ear
+        ld *EAR_RAM *LEFT_EAR_POSITION
+        rts
+    @init_ram_right_ear
+        ld *EAR_RAM *RIGHT_EAR_POSITION
+        rts

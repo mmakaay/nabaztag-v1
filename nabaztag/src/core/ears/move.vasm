@@ -1,0 +1,338 @@
+import core/constants
+import core/ears/common
+
+; Subroutine: @Core.Ears.MoveStart()
+;
+; Start moving the $EAR into direction $DIR, and schedule to end
+; at position $POS.
+;
+; Input:
+;   $EAR (R12): Ear to move (%EAR_LEFT or %EAR_RIGHT)
+;   $DIR (R13): Direction to move into (%MOVE_FORWARD or %MOVE_REVERSE)
+;   $POS (R14): Position to move to (see %POS_* constants)
+
+$motor_state       equ R0 ; Motor direction as stored in the RAM
+$position_state    equ R1 ; Last known motor position as stored in the RAM
+$encoder_state     equ R2 ; Last known encoder value as stored in the RAM
+$encoder_current   equ R3 ; The current encoder value
+$direction         equ R4 ; Used for controlling the motor
+$tmp               equ R5 ; General purpose temporary register
+%motor_out_of_sync equ 3  ; Used to mark an ear as out of sync
+
+@Core.Ears.MoveStart()
+    push all
+    bsr @Core.Ears.InitRam()
+
+    ; Check if the motor is currently running in the opposite direction
+    ; of the requested direction.
+    ldr $motor_state %RAM_FLD_EAR_MOTOR *EAR_RAM
+    beq @motor_ok ; check if the motor is running at all
+    cmp $motor_state $DIR ; check the motor direction, same as requested?
+    beq @motor_ok
+    ; It is, bring it to a halt!
+    BSR @stop()
+    @motor_ok
+
+    pull last
+    rts
+
+; Subroutine: Core.Ears.Stop()
+;
+; Stop movement for an $EAR.
+;
+; Input:
+;   $EAR (R12): Ear to move (%EAR_LEFT or %EAR_RIGHT)
+;   $DIR (R13): Direction to move into (%MOVE_FORWARD or %MOVE_REVERSE)
+;   $POS (R14): Position to move to (see %POS_* constants)
+;
+@Core.Ears.Stop()
+    push all
+    bsr @Core.Ears.InitRam()
+    bsr @stop()
+    pull all
+    rtsCore.Ears.Stop
+
+; -------------------------------------------------------------------------
+; Private subroutines
+; -------------------------------------------------------------------------
+
+@stop()
+    ld $direction %MOTOR_STOP
+    motor $EAR, $direction
+    wait 1
+    bsr @update_state_in_ram()
+    str $direction %RAM_FLD_EAR_MOTOR *EAR_RAM
+    rts
+
+@update_state_in_ram()
+    motorget $encoder_current $EAR
+    ldr $encoder_state %RAM_FLD_EAR_ENCODER *EAR_RAM
+    ; Check if the encoder value has changed, compared to the last known
+    ; encoder value. If not, then there is nothing to do here.
+    cmp $encoder_current $encoder_state
+    beq @update_state_in_ram_done
+    ldr $position_state %RAM_FLD_EAR_POSITION *EAR_RAM
+
+    ldr $motor_state %RAM_FLD_EAR_MOTOR *EAR_RAM
+    ld $direction %motor_out_of_sync
+    cmp $motor_state $direction
+    beq @update_for_out_of_sync_motor
+    ld $direction %MOTOR_STOP
+    cmp $motor_state $direction
+    beq @update_for_stopped_motor
+
+    @update_for_running_motor
+        ; The position of the ear has changed. Assumption: the ear has moved
+        ; into the motor direction only. When the ear was moved manually in
+        ; the opposite direction of the motor, we cannot detect this (since
+        ; the encoder value always goes up, regardless the rotation direction).
+        ld $direction %MOVE_FORWARD
+        cmp $motor_state $direction
+        bne @update_for_motor_running_backward
+        @update_for_motor_running_forward
+            ; New encoder value is: (old encoder + new encoder) MOD 17
+            add $position_state $encoder_current
+            sub $position_state $encoder_state
+            bsr @mod17_on_position_state
+        @update_for_motor_running_backward
+            ; New position is: (old pos - (old encoder - new encoder))
+            ; ...
+    @update_for_stopped_motor
+        ; The motor is not running. Check if it still is at the same
+        ; encoder value. If not, the ear might have been moved manually.
+        ; ...
+    @update_for_out_of_sync_motor
+        ; ...
+    @update_state_in_ram_done
+        rts
+
+@mod17_on_position_state
+    ; Compute: $position_state = $position_state MOD 17
+    ld $tmp 17
+    div $position_state $tmp
+    ld $position_state 15
+    div $tmp $position_state
+    rts
+
+; Subroutine: @Core.Ears.MoveInit()
+;
+; Input:
+;   $EAR (R12): Ear to move (%EAR_LEFT or %EAR_RIGHT)
+;   $DIR (R13): Direction to move into (%MOVE_FORWARD or %MOVE_REVERSE)
+;   $POS (R14): Position to move to (see %POS_* constants)
+
+$position_state     equ R0 ; current position, as stored in the ear state
+$encoder_state equ R1 ; current encoder value, as stored in the ear state
+$delta_real      equ R2 ; real notches (encoder ticks) to move
+$delta_virtual   equ R3 ; virtual notches (for missing notches 15 - 17) to move
+$forward         equ R5
+$pos_max         equ R4
+$pos_virt_first  equ R6
+$pos_virt_last   equ R7
+
+@Core.Ears.MoveInit()
+    push all
+
+    ; Retrieve the current state of the ear from RAM.
+    bsr @Core.Ears.InitRam()
+    ldr $position_state %RAM_FLD_EAR_POSITION *EAR_RAM
+    ldr $encoder_state %RAM_FLD_EAR_ENCODER *EAR_RAM
+
+    ; Define a few constants as used in the logic below.
+    ld $forward        %MOVE_FORWARD
+    ld $pos_max        19
+    ld $pos_virt_first 15
+    ld $pos_virt_last  17
+
+    clr $delta_real
+    clr $delta_virtual
+
+    @simulate_step
+        ; Run a simulation of moving the ear one step.
+        cmp $DIR $forward
+        beq @forward
+        @backward
+            tst $position_state
+            beq @backward_at_zero
+            @backward_above_zero
+                dec $position_state
+                bra @after_simulate_step
+            @backward_at_zero
+                ld $position_state 19
+                bra @after_simulate_step
+        @forward
+            cmp $position_state $pos_max
+            beq @forward_at_last
+            @forward_before_last
+                inc $position_state
+                bra @after_simulate_step
+            @forward_at_last
+                rst $position_state
+        @after_simulate_step
+
+    @increment_movement
+        ; When moving to a virtual position, increment $delta_virtual.
+        ; When moving to a real notch position, increment $delta_real
+        ; and reset $delta_virtual. The virtual positions are 15, 16 and 17.
+        cmp $position_state $pos_virt_first
+        blt @real
+        cmp $position_state $pos_virt_last
+        bgt @real
+        @virtual
+            inc $delta_virtual
+            bra @increment_movement
+        @real
+            inc $delta_real
+            rst $delta_virtual
+        @increment_movement
+
+    @check_for_target_position
+        ; Check if the simulation has reached the requested target position.
+        ; If not, then do the next simulation step.
+        cmp $position_state $POS
+        BNE @simulate_step
+
+
+
+; -----------------------------------------------------------------------
+; Failed attempt below... Well, failed, it just got too complex.
+; The above method seems a lot more understandable.
+;
+; Subroutine: @Core.Ears.MoveStart()
+;
+; Input:
+;   $EAR (R12): Ear to move (%EAR_LEFT or %EAR_RIGHT)
+;   $DIR (R13): Direction to move into (%MOVE_FORWARD or %MOVE_REVERSE)
+;   $POS (R14): Position to move to (see %POS_* constants)
+;
+;$position_state        equ R0
+;$new_pos        equ R14
+;$encoder_state    equ R1
+;$new_encoder    equ R2
+;$value          equ R3
+;$a              equ R4
+;$b              equ R5
+;$delta_real     equ R6 ; real notches delta (encoder ticks) to move
+;$delta_virtual  equ R7 ; virtual notches delta (for removed notches 15 - 17)
+;
+;@Core.Ears.MoveInitNotUsedEventually()
+;    push $position_state $encoder_state $new_encoder $value $a $b $delta_real $delta_virtual
+;
+;    ; Retrieve the current state of the ear from RAM.
+;    bsr @Core.Ears.InitRam()
+;    ldr $position_state %RAM_FLD_EAR_POSITION *EAR_RAM
+;    ldr $encoder_state %RAM_FLD_EAR_ENCODER *EAR_RAM
+;
+;    clr $delta_real
+;    clr $delta_virtual
+;
+;    ; Check if the new position is in the range [15-17]. In that case, it is
+;    ; a position for which no real notch exists on the encoder wheel and for
+;    ; which we'll have to to some time-based positioning. We call these
+;    ; positions "virtual notches".
+;    ld $value 15
+;    cmp $new_pos $value
+;    blt @move_to_real_notch
+;    ld $value 17
+;    cmp $new_pos $value
+;    bgt @move_to_real_notch
+;    bra @move_to_virtual_notch
+;
+;    @move_to_real_notch
+;        ; Translate the requested ear position into the related encoder
+;        ; wheel notch number. Formula: $new_encoder = ($new_pos + 2) MOD 20
+;        ld $new_encoder $new_pos
+;        add $new_encoder 2
+;        ld $value 20
+;        cmp $new_encoder $value
+;        blt @compute_encoder_delta
+;        sub $new_encoder 20
+;        bra @compute_encoder_delta
+;
+;    @move_to_virtual_notch
+;        ; Check if the old position is in the range [15-17] (a virtual notch).
+;        ld $value 15
+;        cmp $position_state $value
+;        blt @move_to_virtual_notch_from_real_notch
+;        ld $value 17
+;        cmp $position_state $value
+;        bgt @move_to_virtual_notch_from_real_notch
+;        bra @move_to_virtual_notch_from_virtual_notch
+;
+;    @move_to_virtual_notch_from_real_notch
+;        ; This movement is done by first rotating until the encoder wheel
+;        ; is at the last notch before the gap, and then continuing rotation
+;        ; based on timing to get to the virtual notch.
+;        LD $value %MOVE_FORWARD
+;        CMP $DIR $value
+;        BEQ @forward_2
+;        @backward_2
+;            ; When rotating backward, encoder wheel notch nr 0 will
+;            ; be the last notch that is encountered, before rotating into
+;            ; the virtual notch positions. The ear will then be at
+;            ; position 18. The next upcoming positions during rotation will
+;            ; be 17, 16 and 14, making the number of virtual ticks to
+;            ; rotate 18 minus the target position.
+;            ld $new_encoder 0
+;            ld $delta_virtual 18
+;            sub $delta_virtual $new_pos
+;            bra @compute_2
+;        @forward_2
+;            ; When rotating forward, the last encoder wheel notch will
+;            ; be 16, at which the ear will be at position 14. The next
+;            ; upcoming positions are 15, 16 and 17, making the number of
+;            ; virtual ticks to rotate the target position minus 14.
+;            ld $new_encoder 16
+;            ld $delta_virtual $position_state
+;            sub $delta_virtual 14
+;        @compute_2
+;            bra @compute_encoder_delta
+;
+;    @move_to_virtual_notch_from_virtual_notch
+;        ; When moving from a virtual notch to another virtual notch,
+;        ; we might be moving within the gap only (e.g. when going from
+;        ; position 17 to 15 backward), or we might pass real notches
+;        ; (e.g. when going from 17 to 15 forward).
+;        LD $value %MOVE_FORWARD
+;        cmp $DIR $value
+;        beq @forward_1
+;        @backward_1
+;            ld $a $new_pos
+;            ld $b $position_state
+;            bra @compute_1
+;        @forward_1
+;            ld $a $position_state
+;            ld $b $new_pos
+;        @compute_1
+;            ; When we rotate over real notches during the move, we can
+;            ; ignore the fact that we're coming from a virtual notch
+;            ; and use the same logic as when coming from a real notch.
+;            cmp $b $a
+;            blt @move_to_virtual_notch_from_real_notch
+;            ; When we only rotate over virtual notches, the difference
+;            ; between the two positions is all we need to rotate.
+;            sub $b $a
+;            ld $delta_virtual $b
+;            bra @done
+;
+;    @compute_encoder_delta
+;        LD $value %MOVE_FORWARD
+;        cmp $DIR $value
+;        beq @forward_3
+;        @backward_3
+;            LD $a $new_encoder
+;            LD $b $encoder_state
+;            BRA @compute_3
+;        @forward_3
+;            LD $a $encoder_state
+;            LD $b $new_encoder
+;        @compute_3
+;            LD $delta_real $b
+;            SUB $delta_real $a
+;            CMP $b $a
+;            BGT @done
+;            ADD $delta_real 17
+;
+;    @done
+;        pull last
+;        rts

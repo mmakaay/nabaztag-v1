@@ -38,14 +38,14 @@ $offtime    EQU R6
     bra @loop
 
 @turn_led_on
-    ld $color %GREEN
+    ld $color %COLOR_GREEN
     ld $brightness 255
     palette $color $brightness
     led $led $ontime 
     rts
 
 @turn_led_off
-    ld $color %OFF
+    ld $color %COLOR_OFF
     ld $brightness 255
     palette $color $brightness
     led $led $offtime

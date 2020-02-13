@@ -1,40 +1,40 @@
 import core/constants
-import core/ears/ram
+import core/ears/common
 
-# (See also doc/ears.md)
-# The ears are moved by two motors.
-#
-# Each motor has a related encoder unit, which is used to know the position
-# of the ears. This encoder is a 20 teeth wheel, which misses 3 of its teeth.
-#
-# To sync an ear, I turn on its motor, while keeping a tab on the motor
-# encoder values. As long as an encoder value does not change, a counter
-# is incremented. As soon as the value does change, the counter value is used
-# # as a measure for the amount of time that has passed between two encoder
-# wheel teeth.
-#
-# When the encoder has passed the 3 teeth gap, the counter will be higher
-# than a counter for a regular gap. Therefore, this counter can be used
-# to identify the start position of the motor.
-#
-# Based on experimentation, I found that threshold values from 7 to 25
-# yield good results for recognizing the 3 teeth encoder gap.
-#
-# Below 7, the gap was sometimes falsely detected too soon. Above 25,
-# the gap was not detected at all. Thresholds close to these boundaries
-# produced unpredictable results.
-#
-# This is good! There is a wide range of thresholds that do work. To let
-# the sync work as quick as possible, I chose a value on the low side.
-# If other people's bunnies have troubles with this (resulting in failing
-# sync, stopping the ear before the sync point) the value might have to
-# be adjusted to a higher value.
-#
-# Note that these measurements do depend on the code that is used for
-# syncing. When the code is changed, new measurements might be required.
-# It might be a good idea to switch to a real time-based gap detection,
-# since that would be less dependent on the exact code structure. For
-# now, this method seems just fine.
+; (See also doc/ears.md)
+; The ears are moved by two motors.
+;
+; Each motor has a related encoder unit, which is used to know the position
+; of the ears. This encoder is a 20 teeth wheel, which misses 3 of its teeth.
+;
+; To sync an ear, I turn on its motor, while keeping a tab on the motor
+; encoder values. As long as an encoder value does not change, a counter
+; is incremented. As soon as the value does change, the counter value is used
+; ; as a measure for the amount of time that has passed between two encoder
+; wheel teeth.
+;
+; When the encoder has passed the 3 teeth gap, the counter will be higher
+; than a counter for a regular gap. Therefore, this counter can be used
+; to identify the start position of the motor.
+;
+; Based on experimentation, I found that threshold values from 7 to 25
+; yield good results for recognizing the 3 teeth encoder gap.
+;
+; Below 7, the gap was sometimes falsely detected too soon. Above 25,
+; the gap was not detected at all. Thresholds close to these boundaries
+; produced unpredictable results.
+;
+; This is good! There is a wide range of thresholds that do work. To let
+; the sync work as quick as possible, I chose a value on the low side.
+; If other people's bunnies have troubles with this (resulting in failing
+; sync, stopping the ear before the sync point) the value might have to
+; be adjusted to a higher value.
+;
+; Note that these measurements do depend on the code that is used for
+; syncing. When the code is changed, new measurements might be required.
+; It might be a good idea to switch to a real time-based gap detection,
+; since that would be less dependent on the exact code structure. For
+; now, this method seems just fine.
 
 $left       equ R0
 $l_new      equ R1
@@ -51,103 +51,112 @@ $sync_state equ R11
 $sync_check equ R12
 
 @Core.Ears.Sync()
-    push all                     # Allows me to fiddle with all registers
+    push all                              ; Allows me to fiddle with all registers
 
-    ld $threshold 9              # Gap detection threshold, see above
-    ld $too_much 50              # If counter exceeds this, ear might be stuck
-    ld $sync_state 0x11          # To keep track if both ears are synced
-    ld $left %MOTOR_LEFT         # Left motor number
-    ld $right %MOTOR_RIGHT       # Right motor number
+    @initialization
+        ld $threshold 9                   ; Gap detection threshold, see above
+        ld $too_much 50                   ; If counter exceeds this, ear might be stuck
+        ld $sync_state 0x11               ; To keep track if both ears are synced
+        ld $left %EAR_LEFT                ; Left motor number
+        ld $right %EAR_RIGHT              ; Right motor number
 
-    ld $direction %REVERSE       # First, start both motors in reverse for a
-    motor $left $direction       # little while. When the ears were synced
-    motor $right $direction      # before, this will bring them right in front
-    wait 30                      # of the gap, making the sync operation fast
+        ld $direction %REVERSE            ; First, start both motors in reverse for a
+        motor $left $direction            ; little while. When the ears were synced
+        motor $right $direction           ; before, this will bring them right in front
+        wait 30                           ; of the gap, making the sync operation fast
 
-    ld $direction %FORWARD       # Now start both motors to make the ears
-    motor $left $direction       # turn in the forward direction
-    motor $right $direction
+        ld $direction %FORWARD            ; Now start both motors to make the ears
+        motor $left $direction            ; turn in the forward direction
+        motor $right $direction
 
-    motorget $l_new $left        # Get the encoder value for the left motor
-    ld $l_old $l_new             # Copy the value to the old value register
-    clr $l_gap_size              # Clear the gap size counter
+        motorget $l_new $left             ; Get the encoder value for the left motor
+        ld $l_old $l_new                  ; Copy the value to the old value register
+        clr $l_gap_size                   ; Clear the gap size counter
 
-    motorget $r_new $right       # Do the same for the right ear
-    ld $r_old $r_new
-    clr $r_gap_size
+        motorget $r_new $right            ; Do the same for the right ear
+        ld $r_old $r_new
+        clr $r_gap_size
 
-@sync_loop
-    wait 1                       # required to update the motor encoders
+    @sync_loop
+        wait 1                            ; required to update the motor encoders
 
-@sync_left
-    ld $sync_check $sync_state   # Check if syncing has already been completed
-    and $sync_check 0x10
-    tst $sync_check
-    beq @sync_right
+        @sync_left
+            ld $sync_check $sync_state    ; Skip if left sync already done
+            and $sync_check 0x10
+            tst $sync_check
+            beq @sync_right
 
-    motorget $l_new $left         # Get new left motor encoder value
-    cmp $l_old $l_new             # Compare to the known value
-    bne @check_for_gap_left       # If it changed, check if we're at the gap
-    inc $l_gap_size               # If not, then increment the gap size counter
+            motorget $l_new $left         ; Get new left motor encoder value
+            cmp $l_old $l_new             ; Compare to the known value
+            bne @check_for_gap_left       ; When changed, check for the gap
+            inc $l_gap_size               ; Otherwise, increment gap counter
 
-    cmp $l_gap_size $too_much     # Compare to the 'too much' threshold
-    bge @stop_sync_left           # Stop syncing ear if it seems stuck
+            cmp $l_gap_size $too_much     ; Compare to the 'too much' threshold
+            bge @stop_sync_left           ; Stop syncing ear if it seems stuck
 
-@sync_right
-    ld $sync_check $sync_state    # Do the same for the right motor.
-    and $sync_check 0x01
-    tst $sync_check
-    beq @restart_if_not_yet_synced
+        @sync_right
+            ld $sync_check $sync_state    ; Do the same for the right motor.
+            and $sync_check 0x01
+            tst $sync_check
+            beq @restart_if_not_yet_synced
 
-    motorget $r_new $right
-    cmp $r_old $r_new
-    bne @check_for_gap_right
-    inc $r_gap_size
+            motorget $r_new $right
+            cmp $r_old $r_new
+            bne @check_for_gap_right
+            inc $r_gap_size
 
-    cmp $r_gap_size $too_much
-    bge @stop_sync_right
+            cmp $r_gap_size $too_much
+            bge @stop_sync_right
 
-@restart_if_not_yet_synced
-    tst $sync_state               # If there are still sync bits active
-    bne @sync_loop                # then restart the sync loop
-    bra @done
+        @restart_if_not_yet_synced
+            tst $sync_state               ; If there are still sync bits active
+            bne @sync_loop                ; then restart the sync loop
+            bra @done
 
-@check_for_gap_left
-    ld $l_old $l_new              # Keep track of the new encoder value
-    cmp $l_gap_size $threshold    # If the gap size exceeds the threshold
-    bgt @stop_sync_left           # then we found the gap, the ear is in sync!
-    clr $l_gap_size               # Otherwise this was a normal tick, clear it
-    bra @sync_right               # and continue with the sync process
+        @check_for_gap_left
+            ld $l_old $l_new              ; Keep track of the new encoder value
+            cmp $l_gap_size $threshold    ; If gap size exceeds the threshold
+            bgt @stop_sync_left           ; then we found the gap, ear in sync!
+            clr $l_gap_size               ; Otherwise, this is a normal tick
+            bra @sync_right               ; Continue with the sync process
 
-@stop_sync_left
-    ld $direction %STOP           # Stop the left motor
-    motor $left $direction
-    and $sync_state 0x01          # Flag this one as synced
-    bra @sync_right               # and continue with the sync process
+        @stop_sync_left
+            ld $direction %STOP           ; Stop the left motor
+            motor $left $direction
+            and $sync_state 0x01          ; Flag this one as synced
+            bra @sync_right               ; and continue with the sync process
 
-@check_for_gap_right
-    ld $r_old $r_new              # Do the same for the right ear
-    cmp $r_gap_size $threshold
-    bgt @stop_sync_right
-    clr $r_gap_size
-    bra @sync_loop
+        @check_for_gap_right
+            ld $r_old $r_new              ; Do the same for the right ear
+            cmp $r_gap_size $threshold
+            bgt @stop_sync_right
+            clr $r_gap_size
+            bra @sync_loop
 
-@stop_sync_right
-    ld $direction %STOP
-    motor $right $direction
-    and $sync_state 0x10
-    bra @restart_if_not_yet_synced
+        @stop_sync_right
+            ld $direction %STOP
+            motor $right $direction
+            and $sync_state 0x10
+            bra @restart_if_not_yet_synced
 
-@done
-    ld $direction 0
+    @done
+        ; Store ear states in RAM
 
-    str $l_old *LEFT_EAR_START     # Store left ear state in RAM
-    str $l_old *LEFT_EAR_TARGET
-    str $direction *LEFT_EAR_MOTOR
+        ; Because of the syncing process, the ears now both are
+        ; not turning and at relative encoder value 1.
+        ld $direction 0
+        str $direction *LEFT_EAR_MOTOR
+        str $direction *RIGHT_EAR_MOTOR
+        ld $direction 1
+        str $direction *LEFT_EAR_DIRECTION
+        str $direction *RIGHT_EAR_DIRECTION
 
-    str $r_old *RIGHT_EAR_START    # Store right ear state in RAM
-    str $r_old *RIGHT_EAR_TARGET
-    str $direction *RIGHT_EAR_MOTOR
+        ; The current and target encoder values are copied from
+        ; the current absolute encoder value.
+        str $l_old *LEFT_EAR_CURRENT
+        str $l_old *LEFT_EAR_TARGET
+        str $r_old *RIGHT_EAR_CURRENT
+        str $r_old *RIGHT_EAR_TARGET
 
-    pull last
-    rts
+        pull last
+        rts

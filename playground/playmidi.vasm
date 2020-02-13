@@ -1,5 +1,5 @@
 import core/leds/off
-import core/leds/twinkle
+import core/leds/random
 
 music_file INTERF_PRECEDENT     midi/interf_precedent.mid
 music_file INTERF_COMMUNION     midi/interf_communion.mid
@@ -68,10 +68,13 @@ $status    equ R2
     midiplay $midi_file
 
 @wait_for_end_of_midi
-    bsr @Core.Leds.Twinkle()
+    ld R4 5
+    bsr @Core.Leds.Random()
+    wait 5
     music $status
     tst $status
     bne @wait_for_end_of_midi
+
     bsr @Core.Leds.Off()
 
 @wait_for_buttonpress_to_play_next_midi

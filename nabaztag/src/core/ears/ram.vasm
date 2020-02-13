@@ -1,7 +1,0 @@
-*LEFT_EAR_START   rmb 1  # Ear encoder value after sync (0 - 255)
-*LEFT_EAR_MOTOR   rmb 1  # Direction (0:stop, 1:forward, 2:backward)
-*LEFT_EAR_TARGET  rmb 1  # Ear encoder value to move the ear to (0 - 255)
-
-*RIGHT_EAR_START  rmb 1  # Same for the right ear
-*RIGHT_EAR_MOTOR  rmb 1
-*RIGHT_EAR_TARGET rmb 1

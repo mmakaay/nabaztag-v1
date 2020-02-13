@@ -1,26 +1,28 @@
-# Subroutine: @DivMod()
-#
-# Input:
-#   R0: the value to compute the div and mod for
-#   R1: the divider to use
-# Output:
-#   R0: the resulting div value
-#   R1: the resulting mod value
-#
-# E.g. input R0=38 R1=17 output R0=2 R1=4 (because 2*17 + 4 = 38).
+; Subroutine: @Core.Match.DivMod()
+;
+; Computes the DIV + MOD for two provided register values.
+;
+; Input:
+;   R0: the value to compute the div and mod for
+;   R1: the divisor to use
+; Output:
+;   R0: the resulting div value
+;   R1: the resulting mod value
+;
+; E.g. input R0=38 R1=17 output R0=2 R1=4 (because 2*17 + 4 = 38).
 
 @Core.Math.DivMod()
     push R2 R3
 
-    ld R2 L0        # R2 = R0 -> copy value
-    ld R3 L1        # R3 = R1 -> copy divider
-    div R2 R3       # R2 = R2 (copy value) // R3 (copy divider) -> compute DIV
-    ld R3 L2        # R3 = R2 -> copy DIV
-    mul R3 R1       # R3 = R3 (DIV) * R1 (divider) -> compute value covered by DIV
-    sub R0 R3       # R0 = R0 (value) - R3 (value covered by DIV) -> compute MOD
+    ld R2 L0        ; R2 = R0 -> copy value
+    ld R3 L1        ; R3 = R1 -> copy divisor
+    div R2 R3       ; R2 = R2 (copy value) // R3 (copy divisor) -> compute DIV
+    ld R3 L2        ; R3 = R2 -> copy DIV
+    mul R3 R1       ; R3 = R3 (DIV) * R1 (divisor) -> compute value covered by DIV
+    sub R0 R3       ; R0 = R0 (value) - R3 (value covered by DIV) -> compute MOD
 
-    ld R1 R0        # R1 = R0 -> copy MOD
-    ld R0 R2        # R0 = R2 -> copy DIV
+    ld R1 R0        ; R1 = R0 -> copy MOD
+    ld R0 R2        ; R0 = R2 -> copy DIV
 
     pull LAST
     rts

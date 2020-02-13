@@ -1,39 +1,57 @@
-# LED numbers.
-%LED_BOTTOM      equ 0
-%LED_LEFT        equ 1
-%LED_MIDDLE      equ 2
-%LED_RIGHT       equ 3
-%LED_NOSE        equ 4
+; LED numbers.
+%LED_BOTTOM            equ 0
+%LED_LEFT              equ 1
+%LED_MIDDLE            equ 2
+%LED_RIGHT             equ 3
+%LED_NOSE              equ 4
+%LED_MAX               equ %LED_NOSE
 
-# Colors that can be used with the PALETTE opcode.
-%OFF             equ 0
-%RED             equ 1
-%GREEN           equ 2
-%YELLOW          equ 3
-%BLUE            equ 4
-%PURPLE          equ 5
-%CYAN            equ 6
-%WHITE           equ 7
-%GREY            equ 8
-%LIGHTRED        equ 9
-%LIGHTGREEN      equ 10
-%LIGHTYELLOW     equ 11
-%LIGHTBLUE       equ 12
-%LIGHTPURPLE     equ 13
-%LIGHTCYAN       equ 14
-%ORANGE          equ 15
+; Colors that can be used with the PALETTE opcode.
+%COLOR_OFF             equ 0
+%COLOR_RED             equ 1
+%COLOR_GREEN           equ 2
+%COLOR_YELLOW          equ 3
+%COLOR_BLUE            equ 4
+%COLOR_PURPLE          equ 5
+%COLOR_CYAN            equ 6
+%COLOR_WHITE           equ 7
+%COLOR_GREY            equ 8
+%COLOR_LIGHTRED        equ 9
+%COLOR_LIGHTGREEN      equ 10
+%COLOR_LIGHTYELLOW     equ 11
+%COLOR_LIGHTBLUE       equ 12
+%COLOR_LIGHTPURPLE     equ 13
+%COLOR_LIGHTCYAN       equ 14
+%COLOR_ORANGE          equ 15
 
-# Ear positions.
-%EAR_UP          equ 3
-%EAR_FORWARD     equ 8
-%EAR_DOWN        equ 13
-%EAR_BACKWARD    equ 18
+; Ear numbers.
+%EAR_RIGHT             equ 0
+%EAR_LEFT              equ 1
 
-# Motor numbers.
-%MOTOR_RIGHT     equ 0
-%MOTOR_LEFT      equ 1
+; Ear movement directions.
+%MOVE_STOP             equ 0
+%MOVE_FORWARD          equ 1
+%MOVE_REVERSE          equ 2
 
-# Motor directions.
-%STOP            equ 0
-%FORWARD         equ 1
-%REVERSE         equ 2
+; Ear positions.
+%POS_UP                equ 0
+%POS_FORWARD           equ 5
+%POS_DOWN              equ 10
+%POS_BACKWARD          equ 15
+
+; Ear positions using a clock hour analogy.
+; There are 20 directions, so unfortunately we have to work with
+; 3 minutes per direction, making this a bit inaccurate.
+; Given hour X, the direction is ROUND(X * 5 / 3)
+%POS_HOUR12            equ 0
+%POS_HOUR1             equ 1
+%POS_HOUR2             equ 3
+%POS_HOUR3             equ 5
+%POS_HOUR4             equ 7
+%POS_HOUR5             equ 8
+%POS_HOUR6             equ 10
+%POS_HOUR7             equ 12
+%POS_HOUR8             equ 13
+%POS_HOUR9             equ 15
+%POS_HOUR10            equ 17
+%POS_HOUR11            equ 18

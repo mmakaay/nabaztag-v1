@@ -1,9 +1,9 @@
 import core/leds/off
-import core/leds/twinkle
+import core/leds/random
 import core/sound/off
 
-# TODO use interrupt on button to move to next midi
-# Current version doesn't work well
+; TODO use interrupt on button to move to next midi
+; Current version doesn't work well
 
 music_file OOOH midi/twilightzone.mid
 music_file TARDIS midi/doctorwho.mid
@@ -27,7 +27,9 @@ $status    equ R2
     midiplay $midi_file
 
 @wait_for_end_of_midi
-    bsr @Core.Leds.Twinkle()
+    ld R4 5  
+    bsr @Core.Leds.Random()
+    wait 5
 
     pushbutton $status
     tst $status

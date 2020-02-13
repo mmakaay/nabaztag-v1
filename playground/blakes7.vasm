@@ -8,13 +8,13 @@ $file equ R0
 @Main
     bsr @Core.Leds.Off()
 
-    # Set volume
+    ; Set volume
     ld   $vol 255
     mvol $vol
     ld   $vol 150
     vol  $vol
 
-    # Start MIDI playback
+    ; Start MIDI playback
     ld $file music_file:BLAKES7
     midiplay $file
 

@@ -6,7 +6,7 @@ from nabaztag.exceptions import \
     AsmFileNotFound, AsmMusicFileNotFound, AsmMusicFileConflict
 
 
-COMMENTS = re.compile('\s*#.*$')
+COMMENTS = re.compile('\s*;.*$')
 TRIMMABLE_WHITESPACE = re.compile('(^\s+|\s+$)')
 WHITESPACE = re.compile('\s+')
 MACRO = re.compile('^(\S+) EQU (.+)$', flags=re.IGNORECASE)
@@ -86,13 +86,17 @@ class Preprocessor():
             for line in src:
                 frame.line_nr += 1
                 line = self._normalize_input(line)
+                line = frame.macros.apply(line)
+                line = self.macros.apply(line)
+
                 self._handle_empty_line(frame, line) or \
                 self._handle_import(frame, line) or \
                 self._handle_music_file(frame, line) or \
                 self._handle_ram_reservation(frame, line) or \
-                self._handle_define_macro(frame, line) or \
+                self._handle_macro_definition(frame, line) or \
                 self._handle_push_or_pull_line(frame, line) or \
                 self._handle_other_line(frame, line)
+
         self._mangle_local_symbols()
         self._rewrite_music_file_labels()
 
@@ -169,7 +173,7 @@ class Preprocessor():
         macro_set.add(find, replace)
         return True
 
-    def _handle_define_macro(self, frame, line):
+    def _handle_macro_definition(self, frame, line):
         """The pseudo-opcode "<find> EQU <replace> (equate) can be used to
            define a simple macro. Two kinds of macros are supported: global
            and local. Global macros are identified by the fact that the first
@@ -212,7 +216,7 @@ class Preprocessor():
             lo = regs & 255
         else:
             return False
-            
+
         if opcode == 'PUSH':
             frame.pushes.append((hi, lo))
         elif frame.pushes:
@@ -223,8 +227,6 @@ class Preprocessor():
         return True
 
     def _handle_other_line(self, frame, line):
-        line = frame.macros.apply(line)
-        line = self.macros.apply(line)
         self.lines.append((line, frame.source_nr, frame.line_nr))
 
     def _mangle_local_symbols(self):

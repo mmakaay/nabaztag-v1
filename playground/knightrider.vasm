@@ -15,19 +15,19 @@ $status EQU R5
 @Main
     bsr @Core.Leds.Off()
 
-    # Set volume
+    ; Set volume
     ld $vol 150
     mvol $vol
     ld $vol 150
     vol $vol
 
-    # LED settings
+    ; LED settings
     ld $r 0
     ld $g 0
     ld $b 0
     ld $time 5
 
-    # Start MIDI playback
+    ; Start MIDI playback
     ld R0 music_file:KITT
     midiplay R0
 
